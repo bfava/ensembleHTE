@@ -1,0 +1,48 @@
+Package: ensembleHTE
+Type: Package
+Title: Ensemble Methods for Learning Features of Heterogeneous Treatment Effects
+Version: 0.1.0
+Authors@R: c(
+    person("Bruno Fava", email = "brunovnfava@gmail.com", role = c("aut", "cre"))
+    )
+Description: Implements ensemble methods for heterogeneous treatment effect (HTE) 
+    estimation and general prediction tasks. Combines predictions from multiple machine 
+    learning algorithms using cross-validated Best Linear Predictor weights with 
+    repeated K-fold cross-fitting. Provides analysis tools including Group Average 
+    Treatment Effects (GATES), Best Linear Predictor (BLP), Classification Analysis 
+    (CLAN), and Group Averages (GAvs). 
+    Based on the methodology described in Fava (2025).
+License: MIT + file LICENSE
+Encoding: UTF-8
+RoxygenNote: 7.3.3
+Depends: 
+    R (>= 4.0.0)
+Imports:
+    stats,
+    methods,
+    rlang,
+    data.table,
+    ggplot2,
+    sandwich,
+    lmtest,
+    mlr3,
+    mlr3learners,
+    mlr3tuning,
+    mlr3tuningspaces,
+    lgr,
+    grf,
+    future,
+    future.apply,
+    MASS,
+    Matrix,
+    fastDummies
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    glmnet,
+    gbm,
+    ranger
+VignetteBuilder: knitr
+URL: https://github.com/bfava/ensembleHTE
+BugReports: https://github.com/bfava/ensembleHTE/issues

@@ -1,0 +1,991 @@
+---
+title: "Ensemble Methods for Learning Features of Heterogeneous Treatment Effects"
+subtitle: "A Complete Guide to the ensembleHTE Package"
+author: "Bruno Fava"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+vignette: >
+  %\VignetteIndexEntry{Ensemble Methods for Learning Features of Heterogeneous Treatment Effects}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+# Introduction
+
+## Overview
+
+The `ensembleHTE` package provides a comprehensive framework for learning features of heterogeneous treatment effects (HTEs) in randomized controlled trials using ensemble machine learning methods. The package implements the estimation strategy developed in Fava (2025), which combines predictions from multiple machine learning algorithms using Best Linear Predictor (BLP) weights and repeated K-fold cross-fitting to improve statistical power while maintaining valid inference.
+
+The key innovation over existing methods is **using the entire sample for final inference** rather than holding out data for validation. By averaging estimates across M repetitions of K-fold cross-fitting, the package achieves higher statistical power than existing split-sample methods.
+
+## When to Use This Package
+
+This package is designed for researchers and practitioners who want to:
+
+1. **Detect treatment effect heterogeneity**: Test whether a treatment affects different individuals differently based on their observable characteristics
+2. **Characterize beneficiaries**: Identify which types of individuals benefit most (or least) from a treatment
+3. **Improve targeting**: Develop targeting rules for allocating treatments based on predicted benefits
+4. **Compare targeting strategies**: Evaluate whether unrestricted targeting (rank everyone) outperforms constrained targeting (rank within subgroups)
+5. **Validate predictions**: Test whether machine learning predictions have genuine out-of-sample predictive power
+
+## Key Concepts
+
+### Heterogeneous Treatment Effects (HTE)
+
+In randomized controlled trials (RCTs), the **Average Treatment Effect (ATE)** measures the mean effect of treatment across the population:
+
+$$\text{ATE} = E[Y_i(1) - Y_i(0)]$$
+
+However, treatment effects often vary across individuals. The **Conditional Average Treatment Effect (CATE)** captures this heterogeneity:
+
+$$\text{CATE}(x) = E[Y_i(1) - Y_i(0) | X_i = x]$$
+
+where $X_i$ represents individual characteristics (covariates).
+
+### Group Average Treatment Effects (GATES)
+
+**GATES** (Chernozhukov et al., 2025) provides a structured way to test for and visualize treatment effect heterogeneity by:
+
+1. Using machine learning to predict individual treatment effects $\hat{\tau}_i$ based on covariates
+2. Sorting individuals into quantile groups (e.g., terciles) based on these predictions
+3. Estimating the average treatment effect within each group
+4. Testing whether high-prediction and low-prediction groups have statistically different effects
+
+### The Ensemble Approach
+
+This package improves upon existing single-algorithm approaches by:
+
+1. **Combining Multiple ML Algorithms**: Uses several algorithms (e.g., random forests, gradient boosting, elastic net) and optimally combines their predictions using BLP weights
+2. **K-fold Cross-Fitting**: Trains models on K-1 folds and generates predictions on the held-out fold, ensuring valid out-of-sample predictions for every observation
+3. **Full-Sample Inference**: Uses the entire dataset for final GATES estimation, maximizing statistical power
+4. **Repeated Sample-Splitting**: Averages across M repetitions for stability and valid inference. **Important**: For debugging and exploration, use M = 2 or 3 to quickly verify your code works. For final results and publication, use M ≥ 100 at least (use more if you can!). The tests conducted with the methodology and recommended usage require M ≥ 100.
+
+## Installation
+
+Install the development version from GitHub:
+
+```{r installation}
+# install.packages("devtools")
+devtools::install_github("bfava/ensembleHTE")
+```
+
+The package requires R ≥ 4.0.0 and depends on several packages including `grf`, `mlr3`, `data.table`, and `ggplot2`. These will be installed automatically.
+
+For additional ML algorithms, you may want to install optional packages:
+
+```{r optional-packages}
+install.packages(c("glmnet", "gbm", "ranger"))
+```
+
+# Basic Workflow
+
+## Simulating Example Data
+
+Throughout this vignette, we'll use simulated data with known treatment effect heterogeneity:
+
+```{r simulate-data}
+library(ensembleHTE)
+
+# Set seed for reproducibility
+set.seed(42)
+
+# Generate data with heterogeneous treatment effects
+n <- 1000
+
+# Covariates
+X1 <- rnorm(n)           # Continuous covariate
+X2 <- rnorm(n)           # Another continuous covariate
+X3 <- rbinom(n, 1, 0.5)  # Binary covariate
+
+# Treatment (randomized)
+D <- rbinom(n, 1, 0.5)
+
+# True heterogeneous treatment effect: tau(X) = 1 + 0.8*X1 + 0.4*X3
+# Individuals with high X1 and X3=1 benefit more from treatment
+tau <- 1 + 0.8 * X1 + 0.4 * X3
+
+# Potential outcomes
+Y0 <- 0.5 * X1 + 0.3 * X2 + rnorm(n, sd = 0.5)  # Control outcome
+Y1 <- Y0 + tau                                    # Treated outcome
+
+# Observed outcome
+Y <- D * Y1 + (1 - D) * Y0
+
+# Create data frame
+data <- data.frame(Y = Y, D = D, X1 = X1, X2 = X2, X3 = X3)
+head(data)
+```
+
+In this simulation:
+
+- The **true ATE** is approximately 1.2 (average of $\tau$)
+- Treatment effects are **heterogeneous**: individuals with higher X1 and X3=1 benefit more
+- X2 affects the outcome level but does not modify the treatment effect
+
+## Fitting an Ensemble HTE Model
+
+The main function for HTE estimation is `ensemble_hte()`:
+
+```{r fit-hte}
+# Fit ensemble HTE model
+# Start with M = 2 for quick debugging, then increase to M >= 100 for final results
+fit <- ensemble_hte(
+  formula = Y ~ X1 + X2 + X3,
+  treatment = D,
+  data = data,
+  algorithms = c("lm", "grf"),  # Linear model + causal forest
+  M = 2,                         # Use M = 2-3 for debugging, M >= 100 for final results
+  K = 3                          # 3-fold cross-fitting
+)
+
+# View basic information
+print(fit)
+```
+
+The `print()` method shows:
+
+- Data dimensions and specification
+- Algorithms used in the ensemble
+- Metalearner strategy (R-learner by default)
+- Split-sample parameters (M repetitions, K folds)
+
+For more detailed output:
+
+```{r summary-hte}
+summary(fit)
+```
+
+The `summary()` method provides a comprehensive overview including:
+
+- **ITE Distribution**: Descriptive statistics of predicted individual treatment effects (min, quartiles, mean, max, SD, % positive) averaged across M repetitions
+- **BLP Analysis**: Estimates of beta1 (ATE) and beta2 (HET) with standard errors and p-values, plus interpretation of whether significant heterogeneity is detected
+- **GATES Analysis**: Group average treatment effects showing estimates by quantile group, along with key hypothesis tests (Top-Bottom, Top-All)
+
+# Analyzing Treatment Effect Heterogeneity
+
+## Group Average Treatment Effects (GATES)
+
+The `gates()` function computes average treatment effects for groups defined by predicted ITE quantiles:
+
+```{r gates}
+# Compute GATES with 3 groups (terciles)
+gates_results <- gates(fit, n_groups = 3)
+print(gates_results)
+```
+
+### Interpreting GATES Output
+
+The output includes:
+
+**Group Estimates**:
+
+- **Group 1**: Bottom tercile (lowest predicted ITEs)
+- **Group 2**: Middle tercile
+- **Group 3**: Top tercile (highest predicted ITEs)
+
+Each group shows the estimated average treatment effect for individuals in that group, along with standard errors, t-statistics, and p-values.
+
+**Heterogeneity Tests**:
+
+- **Top-Bottom**: Tests whether the top group has a different treatment effect than the bottom group. A significant result (p < 0.05) indicates evidence of heterogeneity.
+- **Top-All**: Tests whether the top group differs from the overall average. Useful for comparing targeting strategies focusing on high-benefit individuals versus treating everyone.
+
+### Visualizing GATES
+
+```{r plot-gates, fig.cap="GATES estimates showing treatment effect heterogeneity"}
+plot(gates_results)
+```
+
+The plot shows:
+
+- Point estimates for each group with 95% confidence intervals
+- Dashed line indicating the overall ATE
+- Groups ordered from lowest to highest predicted benefit
+
+If the confidence intervals don't overlap much (especially between groups 1 and 3), this provides visual evidence of heterogeneity.
+
+## Best Linear Predictor (BLP)
+
+The `blp()` function tests whether the ML predictions capture meaningful heterogeneity:
+
+```{r blp}
+# Compute BLP
+blp_results <- blp(fit)
+print(blp_results)
+```
+
+### Interpreting BLP Output
+
+The BLP regression is:
+
+$$Y_i = \beta_1 (D_i - p_i) + \beta_2 (D_i - p_i)(\hat{\tau}_i - \bar{\hat{\tau}}) + \epsilon_i$$
+
+where $p_i$ is the propensity score (probability of treatment).
+
+**Coefficients**:
+
+- **beta1 (ATE)**: Estimates the overall average treatment effect.
+- **beta2 (HET)**: Tests heterogeneity. A significant beta2 (p < 0.05) indicates that the ML predictions $\hat{\tau}_i$ capture genuine treatment effect heterogeneity. If beta2 ≈ 1, the predictions are well-calibrated.
+
+## Classification Analysis (CLAN)
+
+The `clan()` function characterizes which types of individuals are in the top vs. bottom groups:
+
+```{r clan}
+# Compute CLAN for all covariates
+clan_results <- clan(fit, n_groups = 3)
+print(clan_results)
+```
+
+### Interpreting CLAN Output
+
+CLAN compares covariate means between groups:
+
+- **Top vs Bottom**: Compares the top tercile to the bottom tercile
+- **Top vs Else**: Compares the top tercile to everyone else
+- **Top vs All**: Compares the top tercile to the full sample mean
+
+For each comparison, you see:
+
+- **Diff**: The difference in means
+- **Std.Error**: Standard error of the difference
+- **Pr(>|t|)**: P-value testing whether the difference is zero
+
+This helps answer questions like: "Do individuals who benefit most from treatment have higher X1 on average?"
+
+### Visualizing CLAN
+
+```{r plot-clan, fig.cap="CLAN results showing characteristics of top vs bottom groups"}
+plot(clan_results)
+```
+
+The plot shows mean differences with confidence intervals for each variable. Variables with bars that don't include zero are significantly different between groups.
+
+# Advanced Topics
+
+## Metalearner Strategies
+
+The package supports four metalearner strategies for estimating individual treatment effects:
+
+### R-learner (Default)
+
+The R-learner (Robinson, 1988; Nie & Wager, 2021) uses residual-on-residual regression:
+
+1. Estimate $\hat{m}(x) = E[Y|X=x]$ and $\hat{e}(x) = E[D|X=x]$
+2. Compute residuals: $\tilde{Y} = Y - \hat{m}(X)$ and $\tilde{D} = D - \hat{e}(X)$
+3. Regress: $\tilde{Y} = \tau(X) \cdot \tilde{D} + \epsilon$
+
+This approach is particularly effective when treatment propensity varies with covariates.
+
+```{r metalearner-r}
+fit_r <- ensemble_hte(
+  formula = Y ~ X1 + X2 + X3,
+  treatment = D,
+  data = data,
+  metalearner = "r",
+  r_learner = "grf",  # Use causal forest for CATE estimation
+  M = 100, K = 3  # Use M >= 100 for final results
+)
+```
+
+### T-learner
+
+Trains separate models for treated and control groups:
+
+$$\hat{\tau}(x) = \hat{\mu}_1(x) - \hat{\mu}_0(x)$$
+
+```{r metalearner-t}
+fit_t <- ensemble_hte(
+  formula = Y ~ X1 + X2 + X3,
+  treatment = D,
+  data = data,
+  metalearner = "t",
+  M = 100, K = 3
+)
+```
+
+### S-learner
+
+Trains a single model with treatment as a feature:
+
+$$\hat{\mu}(x, d) = E[Y | X=x, D=d]$$
+$$\hat{\tau}(x) = \hat{\mu}(x, 1) - \hat{\mu}(x, 0)$$
+
+```{r metalearner-s}
+fit_s <- ensemble_hte(
+  formula = Y ~ X1 + X2 + X3,
+  treatment = D,
+  data = data,
+  metalearner = "s",
+  M = 100, K = 3
+)
+```
+
+### X-learner
+
+A two-stage approach that imputes counterfactual outcomes:
+
+```{r metalearner-x}
+fit_x <- ensemble_hte(
+  formula = Y ~ X1 + X2 + X3,
+  treatment = D,
+  data = data,
+  metalearner = "x",
+  M = 100, K = 3
+)
+```
+
+**Recommendation**: The R-learner with `grf` is generally a good default. T-learner works well with sufficient sample sizes in each arm. S-learner can underestimate heterogeneity if the base learner struggles to detect treatment-covariate interactions.
+
+## Available Algorithms
+
+The `algorithms` parameter accepts algorithms from two sources:
+
+### grf Package
+
+Use `"grf"` for generalized random forest:
+
+```{r algo-grf}
+fit <- ensemble_hte(
+  formula = Y ~ .,
+  treatment = D,
+  data = data,
+  algorithms = c("grf"),
+  M = 100, K = 3
+)
+```
+
+### mlr3 Learners
+
+Any algorithm supported by mlr3 can be used. Specify just the algorithm name:
+
+| Algorithm | Name | Description |
+|-----------|------|-------------|
+| Linear Model | `"lm"` | Standard linear regression |
+| Random Forest | `"ranger"` | Fast random forest implementation |
+| Elastic Net | `"glmnet"` | L1/L2 regularized regression |
+| Gradient Boosting | `"xgboost"` | XGBoost gradient boosting |
+| Neural Network | `"nnet"` | Single-layer neural network |
+| K-Nearest Neighbors | `"kknn"` | K-nearest neighbors |
+| Support Vector Machine | `"svm"` | Support vector machine |
+
+### Ensemble Recommendations
+
+For most applications, we recommend using **3-4 algorithms** (at most 5). A good general-purpose ensemble:
+
+```{r algo-recommended}
+# Good general-purpose ensemble (4 algorithms)
+fit <- ensemble_hte(
+  formula = Y ~ .,
+  treatment = D,
+  data = data,
+  algorithms = c("lm", "grf", "nnet", "xgboost"),
+  M = 100, K = 3  # Use M >= 100 for final results
+)
+```
+
+This combines:
+
+- **lm**: Linear Model
+- **grf**: Generalized Random Forest
+- **nnet**: Neural Network
+- **xgboost**: Gradient Boosting
+## Hyperparameter Tuning
+
+Enable automatic hyperparameter tuning for mlr3 algorithms by simply setting `tune = TRUE`. The function has sensible defaults, so no additional parameters are required:
+
+```{r tuning-simple}
+# Simple usage with defaults
+fit_tuned <- ensemble_hte(
+  formula = Y ~ X1 + X2 + X3,
+  treatment = D,
+  data = data,
+  algorithms = c("ranger", "glmnet"),
+  tune = TRUE,  # Just set this to TRUE - defaults handle the rest
+  M = 100, K = 3
+)
+```
+
+If you want to customize the tuning process, you can optionally specify `tune_params`:
+
+```{r tuning-custom}
+# Customized tuning parameters (optional)
+fit_tuned <- ensemble_hte(
+  formula = Y ~ X1 + X2 + X3,
+  treatment = D,
+  data = data,
+  algorithms = c("ranger", "glmnet"),
+  tune = TRUE,
+  tune_params = list(
+    time = 60,              # Max 60 seconds per algorithm (default: 30)
+    cv_folds = 3,           # 3-fold CV for tuning (default: 3)
+    stagnation_iters = 250  # Stop if no improvement (default: 250)
+  ),
+  M = 100, K = 3
+)
+```
+
+**Note**: Tuning significantly increases computation time. For exploratory analysis, use `tune = FALSE` and only enable tuning for final results.
+
+## Parallel Processing
+
+Speed up computation by parallelizing across repetitions:
+
+```{r parallel}
+# Use 4 cores for faster computation
+fit <- ensemble_hte(
+  formula = Y ~ X1 + X2 + X3,
+  treatment = D,
+  data = data,
+  algorithms = c("lm", "grf"),
+  M = 100,     # Use M >= 100 for final results
+  K = 3,       # K = 3 is recommended for most samples
+  n_cores = 4  # Parallelize across 4 cores
+)
+```
+
+For large-scale analyses on clusters, you can also combine fits from separate sessions:
+
+```{r combine-fits}
+# Session 1: Run on server 1
+fit1 <- ensemble_hte(Y ~ ., treatment = D, data = data, M = 50, K = 3)
+saveRDS(fit1, "fit_server1.rds")
+
+# Session 2: Run on server 2  
+fit2 <- ensemble_hte(Y ~ ., treatment = D, data = data, M = 50, K = 3)
+saveRDS(fit2, "fit_server2.rds")
+
+# Later: Combine results
+fit1 <- readRDS("fit_server1.rds")
+fit2 <- readRDS("fit_server2.rds")
+fit_combined <- combine_ensembles(fit1, fit2)
+print(fit_combined)  # Shows M = 100
+```
+
+For large-scale cluster computing with many nodes (e.g., 100 servers), you can combine multiple fits using `Reduce()`:
+
+```{r combine-many-fits}
+# Example: combining fits from 100 cluster jobs
+# Each job saved as fit_1.rds, fit_2.rds, ..., fit_100.rds
+
+# Load all fit files
+fit_files <- list.files(pattern = "fit_[0-9]+\\.rds$")
+fits <- lapply(fit_files, readRDS)
+
+# Combine all fits at once
+fit_final <- Reduce(combine_ensembles, fits)
+print(fit_final)  # Shows total M across all jobs
+```
+
+## Propensity Scores
+
+This package is designed for **randomized controlled trials (RCTs)**, where the propensity score (probability of treatment) is known by design.
+
+**Default behavior**: If you don't specify `prop_score`, the function assumes constant propensity equal to the sample treatment proportion. This is appropriate for simple randomization with equal assignment probabilities.
+
+```{r propensity-default}
+# For standard 50/50 randomization, no need to specify prop_score
+fit <- ensemble_hte(
+  formula = Y ~ X1 + X2 + X3,
+  treatment = D,
+  data = data,
+  M = 100, K = 3
+)  # Default: prop_score = mean(D) for all observations
+```
+
+**When to specify `prop_score`**: You only need to provide `prop_score` when the assignment probability **varies across individuals**. If everyone has the same probability (even if not 50%), the default will correctly use the sample treatment fraction:
+
+```{r propensity-known}
+# Example 1: Constant assignment probability (e.g., 70% treated)
+# This is OPTIONAL - the default will use mean(D) which equals 0.7
+# But you can specify it explicitly if you prefer:
+fit <- ensemble_hte(
+  formula = Y ~ X1 + X2 + X3,
+  treatment = D,
+  data = data,
+  prop_score = rep(0.7, nrow(data)),  # Optional for constant probabilities
+  M = 100, K = 3
+)
+
+# Example 2: Stratified randomization with DIFFERENT probabilities by stratum
+# Here prop_score is REQUIRED because probabilities vary across individuals
+data$stratum <- sample(c("A", "B"), nrow(data), replace = TRUE)  # Strata
+data$pscore <- ifelse(data$stratum == "A", 0.3, 0.7)  # Known by design
+fit <- ensemble_hte(
+  formula = Y ~ X1 + X2 + X3,
+  treatment = D,
+  data = data,
+  prop_score = data$pscore,  # Required when probabilities vary
+  M = 100, K = 3
+)
+```
+
+**Important**: Since this package is for RCTs, you should always **know** the propensity scores from your experimental design. Do not estimate propensity scores—use the true assignment probabilities from your randomization protocol.
+
+# Comparing Targeting Strategies
+
+A key application of HTE estimation is developing **targeting rules**: who should receive treatment? The package provides tools to compare different targeting strategies.
+
+## Unrestricted vs. Restricted Ranking
+
+Consider a policy question: Should we target individuals globally based on predicted benefit, or should we target within subgroups (e.g., ensuring each region or demographic group receives its "fair share" of treatment)?
+
+The `gates_compare()` function formally tests whether these strategies yield different outcomes:
+
+```{r gates-compare}
+# Add a stratification variable (e.g., region)
+data$region <- sample(c("North", "South", "East", "West"), n, replace = TRUE)
+
+# Fit model
+fit <- ensemble_hte(
+  formula = Y ~ X1 + X2 + X3,
+  treatment = D,
+  data = data,
+  M = 100, K = 3
+)
+
+# Compare strategies
+comparison <- gates_compare(fit, strata = "region", n_groups = 3)
+print(comparison)
+```
+
+### Interpreting Comparison Results
+
+The output shows three sets of results:
+
+1. **Unrestricted GATES**: Groups formed by ranking predictions across the full sample
+2. **Restricted GATES**: Groups formed by ranking predictions within each stratum (region)
+3. **Difference**: The difference between strategies with properly computed standard errors
+
+Key tests:
+
+- **Top-Bottom Diff**: Tests whether the "top-bottom gap" is larger with unrestricted targeting. A significant positive difference suggests unrestricted targeting identifies more extreme beneficiaries.
+- **Group-level Differences**: Shows whether each group's average differs between strategies.
+
+### Visualizing Strategy Comparison
+
+```{r plot-gates-compare, fig.cap="Comparison of unrestricted vs. restricted targeting strategies"}
+plot(comparison)
+```
+
+The plot shows both strategies side-by-side, making it easy to see whether they produce meaningfully different results.
+
+## When to Use Restricted Targeting
+
+Restricted targeting may be preferred when:
+
+1. **Equity concerns**: Ensuring each subgroup receives some treatment
+2. **Implementation constraints**: Cannot rank across groups due to logistics
+3. **Fairness requirements**: Regulatory or ethical requirements for balanced allocation
+
+The comparison tests help quantify the **efficiency cost** of restricted targeting: how much predicted benefit is lost by not targeting globally?
+
+# Prediction Tasks (Without Treatment)
+
+The package also supports standard prediction problems without treatment effects. This is useful for:
+
+- Predicting outcomes based on covariates
+- Identifying groups with high/low predicted outcomes
+- Testing whether ML predictions have genuine predictive power
+
+## Fitting an Ensemble Prediction Model
+
+```{r fit-pred}
+# For illustration: predict Y from X without treatment structure
+fit_pred <- ensemble_pred(
+  formula = Y ~ X1 + X2 + X3,
+  data = data,
+  algorithms = c("lm", "ranger", "grf"),
+  M = 100, K = 3  # Use M >= 100 for final results
+)
+
+print(fit_pred)
+summary(fit_pred)
+```
+
+## Group Averages (GAVS)
+
+The `gavs()` function computes average outcomes for groups defined by prediction quantiles:
+
+```{r gavs}
+gavs_results <- gavs(fit_pred, n_groups = 3)
+print(gavs_results)
+plot(gavs_results)
+```
+
+This shows whether individuals with high predicted Y actually have higher observed Y on average.
+
+## Comparing GAVS Strategies
+
+Like `gates_compare()`, you can compare unrestricted vs. restricted prediction strategies:
+
+```{r gavs-compare}
+# Compare prediction strategies by region
+gavs_comparison <- gavs_compare(fit_pred, strata = "region", n_groups = 3)
+print(gavs_comparison)
+plot(gavs_comparison)
+```
+
+# Advanced Topic: Cross-Outcome Analysis
+
+One of the most powerful features of this package is the ability to **analyze outcomes different from the one used for prediction**. This enables several important research designs that go beyond standard HTE analysis.
+
+## Overview: Decoupling Prediction from Analysis
+
+The key insight is that you can:
+
+1. **Train predictions on one variable** (using `ensemble_hte()` or `ensemble_pred()`)
+2. **Form groups** based on those predictions
+3. **Analyze treatment effects or averages** on a completely different outcome
+
+This decoupling opens up many possibilities:
+
+| Prediction Target | Analysis Target | Use Case |
+|-------------------|-----------------|----------|
+| ITE on outcome Y | Treatment effect on Z | Do predicted beneficiaries on Y also benefit on Z? |
+| Predicted Y (no treatment) | Treatment effect on Z | Does baseline Y predict who benefits from treatment on Z? |
+| ITE on outcome Y | Average of endline Z by group | What are the post-treatment characteristics of predicted beneficiaries? |
+
+**Note on the third case**: This is distinct from CLAN, which examines baseline covariates X. Here, Z is an **endline outcome** measured after treatment—something that might itself be affected by treatment. For example, you might want to know: "Among those predicted to benefit most on test scores (Y), what is their average college enrollment rate (Z)?" This helps characterize beneficiaries using post-treatment outcomes.
+
+## Example 1: Predict ITE, Analyze Treatment Effects on Different Outcome
+
+Suppose you estimate treatment effects on a primary outcome Y, but also want to know if the same individuals who benefit on Y also benefit on a secondary outcome Z.
+
+```{r cross-outcome-ite-gates}
+# Simulate data with two outcomes
+set.seed(42)
+n <- 1000
+X1 <- rnorm(n)
+X2 <- rnorm(n)
+D <- rbinom(n, 1, 0.5)
+
+# True treatment effects (correlated across outcomes)
+tau_Y <- 1 + 0.8 * X1  # Effect on Y
+tau_Z <- 0.5 + 0.6 * X1  # Effect on Z (correlated with tau_Y)
+
+# Outcomes
+Y <- 0.5 * X1 + D * tau_Y + rnorm(n, sd = 0.5)
+Z <- 0.3 * X2 + D * tau_Z + rnorm(n, sd = 0.5)
+
+data <- data.frame(Y = Y, Z = Z, D = D, X1 = X1, X2 = X2)
+
+# Step 1: Fit HTE model predicting treatment effects on Y
+fit_Y <- ensemble_hte(
+  formula = Y ~ X1 + X2,
+  treatment = D,
+  data = data,
+  algorithms = c("lm", "grf"),
+  M = 100, K = 3
+)
+
+# Step 2: Analyze GATES on the DIFFERENT outcome Z
+# Groups are formed by predicted ITE on Y
+# But treatment effects are estimated on Z
+gates_Z <- gates(fit_Y, outcome = "Z")
+print(gates_Z)
+```
+
+This answers: **"Do individuals with high predicted treatment effects on Y also experience high treatment effects on Z?"**
+
+If the top-bottom difference is significant, it suggests that the heterogeneity you detected on Y "transfers" to Z—the same individuals benefit on both outcomes.
+
+## Example 2: Predict Y (No Treatment), Analyze Treatment Effects
+
+Sometimes you want to use a **baseline predictor** (predicted Y without treatment structure) to see if it predicts who benefits from treatment on a different outcome. This is useful when:
+
+- You have a risk score or index that predicts an outcome
+- You want to test if high-risk individuals benefit more from treatment
+
+```{r cross-outcome-pred-gates}
+# Step 1: Predict Y using ensemble_pred (no treatment structure)
+fit_pred <- ensemble_pred(
+  formula = Y ~ X1 + X2,
+  data = data,
+  algorithms = c("lm", "grf"),
+  M = 100, K = 3
+)
+
+# Step 2: Use gates() with the prediction fit to analyze treatment effects on Z
+# Groups are formed by predicted Y
+# Treatment effects are estimated on Z
+gates_from_pred <- gates(fit_pred, outcome = "Z", treatment = "D")
+print(gates_from_pred)
+```
+
+This answers: **"Do individuals with high predicted Y have different treatment effects on Z?"**
+
+This is particularly useful for **risk-based targeting**: if you have a risk score (e.g., predicted probability of a bad outcome), you can test whether high-risk individuals benefit more from an intervention.
+
+## Example 3: Predict ITE, Analyze Group Averages of Another Variable
+
+You can also examine the **average level** (not treatment effect) of a different variable across groups defined by predicted treatment effects. This extends the CLAN analysis to any variable.
+
+```{r cross-outcome-ite-gavs}
+# Step 1: Fit HTE model on Y
+fit_Y <- ensemble_hte(
+  formula = Y ~ X1 + X2,
+  treatment = D,
+  data = data,
+  algorithms = c("lm", "grf"),
+  M = 100, K = 3
+)
+
+# Step 2: Look at average Z (an endline outcome) by ITE group using gavs()
+# Groups are formed by predicted ITE on Y
+# We see how Z varies across those groups
+gavs_Z <- gavs(fit_Y, outcome = "Z")
+print(gavs_Z)
+plot(gavs_Z)
+```
+
+This answers: **"What is the average Z among individuals with high vs. low predicted treatment effects on Y?"**
+
+This is useful for:
+
+- **Characterizing beneficiaries with endline outcomes**: Beyond CLAN (which looks at baseline covariates X), you can examine post-treatment outcomes like employment status, health indicators, or other endline measures
+- **Understanding mechanisms**: If predicted beneficiaries on Y also have higher average Z, this might suggest a pathway through which treatment effects operate
+
+# Advanced Topic: Training on Subsets
+
+A powerful feature of `ensemble_pred()` is the `train_idx` parameter, which allows you to **train on a subset of observations while generating predictions for everyone**. This is essential when an outcome is only observed for some units.
+
+## Motivation: Outcomes Only Observed for Treated
+
+In many experiments, certain outcomes are **only observed for treated individuals**. For example:
+
+- **Microloan program**: Lender profits (interest payments, repayment rates) are only observed for borrowers who received loans
+- **Educational intervention**: Advanced test scores only measured for students who completed the program
+
+However, you may want to:
+
+1. Predict that outcome for everyone (including controls)
+2. Use those predictions to analyze treatment effects on a different outcome that IS observed for everyone
+
+## Example: Predict Treated-Only Outcome, Analyze Universal Outcome
+
+Consider a microloan experiment where:
+- **Lender profits** (Z) are only observed for those who received a loan (the lender earns interest/fees only from loans that were given)
+- **Household consumption** (Y) is observed for everyone
+
+We want to know: "Do individuals with high predicted lender profits have different treatment effects on household consumption?"
+
+```{r subset-training}
+# Simulate microloan experiment
+set.seed(42)
+n <- 1000
+X1 <- rnorm(n)  # Baseline creditworthiness indicators
+X2 <- rnorm(n)  # Household size
+D <- rbinom(n, 1, 0.5)  # Loan assignment
+
+# Y (household consumption) is observed for everyone
+tau_Y <- 1 + 0.5 * X1
+Y <- 0.5 * X1 + 0.3 * X2 + D * tau_Y + rnorm(n, sd = 0.5)
+
+# Z (lender profits) is only observed for loan recipients
+# Lender profits = interest earned, only exists for loans that were given
+Lender_profits_latent <- 2 + 0.8 * X1 + 0.4 * X2 + rnorm(n, sd = 0.3)
+Z <- ifelse(D == 1, Lender_profits_latent, NA)  # NA for controls (no loan given)
+
+data <- data.frame(Y = Y, Z = Z, D = D, X1 = X1, X2 = X2)
+
+# Step 1: Train prediction model on loan recipients only (where lender profits observed)
+# But generate predicted lender profits for EVERYONE
+fit_lender_profits <- ensemble_pred(
+  formula = Z ~ X1 + X2,
+  data = data,
+  train_idx = (D == 1),  # Only train on treated (loan recipients)
+  algorithms = c("lm", "grf"),
+  M = 100, K = 3
+)
+
+# Predictions are now available for ALL observations (including controls)
+summary(fit_lender_profits)
+```
+
+## Using Subset Predictions for Treatment Effect Analysis
+
+Now you can use the predicted lender profits (which are available for everyone) to analyze treatment effects on household consumption:
+
+```{r subset-gates}
+# Step 2: Analyze treatment effects on consumption, grouped by predicted lender profits
+# This answers: "Do individuals with high predicted lender profits have different 
+# treatment effects on household consumption?"
+gates_by_lender_profits <- gates(fit_lender_profits, outcome = "Y", treatment = "D")
+print(gates_by_lender_profits)
+```
+
+This design is valuable because:
+
+1. **Lender profits were only observed for loan recipients**, so you couldn't directly use them for targeting
+2. By **predicting lender profits for everyone**, you can now examine whether predicted-profit groups have different treatment effects on consumption
+3. This enables **targeting based on a predicted characteristic** (lender profits) that was only measurable in treated individuals
+
+## Summary: Workflow for Subset Training
+
+1. Identify the outcome that is only observed for a subset (e.g., treated only)
+2. Use `ensemble_pred()` with `train_idx` to train on that subset but predict for all
+3. Use `gates()` or `gavs()` with the `outcome` parameter to analyze a different variable that IS observed for everyone
+4. Optionally, use `treatment` parameter to specify the treatment variable
+
+```{r subset-workflow-summary}
+# Complete workflow:
+fit_subset <- ensemble_pred(
+  formula = Z ~ X1 + X2,  # Z is only observed for treated
+  data = data,
+  train_idx = data$D == 1,  # Train only on treated
+  algorithms = c("lm", "grf"),
+  M = 100, K = 3
+)
+
+# Option A: GATES - treatment effects on Y by predicted Z groups
+# Answer: "Do high predicted-Z individuals have different treatment effects on Y?"
+gates_results <- gates(fit_subset, outcome = "Y", treatment = "D")
+
+# Option B: GAVS - average Y by predicted Z groups (no treatment structure)
+# Answer: "What is the average Y among high vs. low predicted-Z individuals?"
+gavs_results <- gavs(fit_subset, outcome = "Y")
+```
+
+# Best Practices and Recommendations
+
+## Sample Size Considerations
+
+The ensemble approach works best with sufficient sample size. We recommend using **3-4 algorithms** (at most 5) and **K = 3** folds for most applications:
+
+| n | Algorithms | K | Groups | Notes |
+|---|------------|---|--------|-------|
+| < 200 | 2-3 | 3 | 3 | Results may be unstable; interpret with caution |
+| 200-500 | 3-4 | 3 | 3 | K = 3 recommended; K = 5 may be unstable |
+| 500-2000 | 3-4 | 3 | 3 | Standard usage |
+| > 2000 | 3-5 | 3 or 5 | 3-5 | Can use K = 5 for large samples |
+
+**Why K = 3?** Larger K values (K = 5, 10) increase computational cost with diminishing returns. K = 5 can also be unstable with smaller samples. K = 3 is generally sufficient and recommended.
+
+## Choosing Parameters
+
+### Number of Repetitions (M)
+
+- **Debugging**: M = 2-3 for quick code verification
+- **Final analysis**: **M ≥ 100** for valid inference
+
+**Important**: The empirical performance of this package were tested using M ≥ 100. Results with smaller M are useful only for debugging and should not be used for publication.
+
+### Number of Folds (K)
+
+- **K = 3**: Recommended for most applications, including small to moderate samples
+- **K = 5**: Can use for large samples (n > 2000), but typically unnecessary
+- **K = 10**: Not recommended—increases computation with minimal benefit
+
+### Number of Groups
+
+- **n_groups = 3**: Standard choice (terciles); recommended for most analyses
+- **n_groups = 5**: More granular, but requires larger samples for stable estimates
+- More groups = more precise targeting but higher variance in estimates
+
+## Interpreting Results
+
+### What Indicates Strong Heterogeneity?
+
+1. **Significant Top-Bottom difference** in GATES (p < 0.05)
+2. **Significant beta2** in BLP (p < 0.05)
+3. **GATES plot** showing non-overlapping confidence intervals between top and bottom groups
+
+### What If No Heterogeneity Is Found?
+
+No significant heterogeneity could mean:
+
+1. **True homogeneity**: Treatment affects everyone similarly
+2. **Underpowered**: Sample too small to detect heterogeneity
+3. **Wrong covariates**: Heterogeneity exists but along unmeasured dimensions
+4. **Model limitations**: ML algorithms unable to capture complex patterns
+
+Consider: increasing sample size, adding relevant covariates, or trying different algorithms. But be careful with specification searching to avoid false positives!
+
+## Reporting Results
+
+When reporting results from this package, we recommend including:
+
+1. **Sample size**
+2. **Algorithms used in the ensemble**
+3. **M and K values** (repetitions and folds)
+4. **GATES table** with estimates, SEs, and p-values
+5. **Top-Bottom test** for heterogeneity
+6. **BLP results** (beta1 for ATE, beta2 for heterogeneity)
+7. **CLAN summary** for key covariates
+
+For visualization:
+
+- GATES coefficient plot with confidence intervals
+- CLAN bar plot showing group differences
+
+# Conclusion
+
+The `ensembleHTE` package provides a comprehensive toolkit for learning features of heterogeneous treatment effects. By combining multiple ML algorithms with repeated cross-fitting, it achieves higher statistical power than existing methods while maintaining valid inference.
+
+Key takeaways:
+
+1. **Use `ensemble_hte()` for treatment effect heterogeneity** in RCTs
+2. **Use `gates()` and `blp()` to test for heterogeneity**
+3. **Use `clan()` to characterize high/low benefit groups**
+4. **Use `gates_compare()` to evaluate targeting strategies**
+5. **Use `ensemble_pred()` for prediction problems** without treatment structure
+
+For questions, bug reports, or feature requests, please visit the [GitHub repository](https://github.com/bfava/ensembleHTE).
+
+# References
+
+Chernozhukov, V., Demirer, M., Duflo, E., & Fernández-Val, I. (2025). Fisher–Schultz Lecture: Generic Machine Learning Inference on Heterogeneous Treatment Effects in Randomized Experiments, with an Application to Immunization in India. *Econometrica*, 93(4), 1121-1164.
+
+Fava, B. (2025). Training and Testing with Multiple Splits: A Central Limit Theorem for Split-Sample Estimators. *arXiv preprint arXiv:2511.04957*.
+
+Künzel, S.R., Sekhon, J.S., Bickel, P.J., & Yu, B. (2019). Metalearners for estimating heterogeneous treatment effects using machine learning. *Proceedings of the National Academy of Sciences*, 116(10), 4156-4165.
+
+Nie, X., & Wager, S. (2021). Quasi-Oracle Estimation of Heterogeneous Treatment Effects. *Biometrika*, 108(2), 299-319.
+
+Wager, S., & Athey, S. (2018). Estimation and Inference of Heterogeneous Treatment Effects using Random Forests. *Journal of the American Statistical Association*, 113(523), 1228-1242.
+
+# Function Reference Summary
+
+## Core Estimation Functions
+
+| Function | Purpose |
+|----------|---------|
+| `ensemble_hte()` | Fit ensemble model for heterogeneous treatment effects |
+| `ensemble_pred()` | Fit ensemble model for prediction (no treatment) |
+| `combine_ensembles()` | Combine multiple ensemble fits |
+
+## Analysis Functions (Treatment Effects)
+
+| Function | Purpose |
+|----------|---------|
+| `gates()` | Group Average Treatment Effects |
+| `blp()` | Best Linear Predictor of CATE |
+| `clan()` | Classification Analysis (characterize groups) |
+| `gates_compare()` | Compare unrestricted vs. restricted targeting |
+
+## Analysis Functions (Prediction)
+
+| Function | Purpose |
+|----------|---------|
+| `gavs()` | Group Averages (for predictions) |
+| `blp_pred()` | Best Linear Predictor (for predictions) |
+| `gavs_compare()` | Compare unrestricted vs. restricted prediction |
+
+## Print and Plot Methods
+
+All results objects have `print()` and `plot()` methods for easy interpretation and visualization.

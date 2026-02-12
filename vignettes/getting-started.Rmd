@@ -1,0 +1,190 @@
+---
+title: "Getting Started with ensembleHTE"
+author: "Bruno Fava"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with ensembleHTE}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Introduction
+
+The `ensembleHTE` package provides tools for learning features of heterogeneous treatment effects in randomized controlled trials using an ensemble approach. The package implements the estimation strategy developed in Fava (2025), which combines predictions from multiple machine learning algorithms using Best Linear Predictor (BLP) weights and repeated K-fold cross-fitting.
+
+## Key Concepts
+
+### GATES (Group Average Treatment Effects)
+
+GATES provide a way to test for and visualize treatment effect heterogeneity by:
+
+1. Using machine learning to predict individual treatment effects based on covariates
+2. Sorting individuals into groups (e.g., terciles) based on these predictions
+3. Estimating the average treatment effect within each group
+4. Testing whether high-prediction and low-prediction groups have different effects
+
+### The Ensemble Approach
+
+This package improves upon existing approaches by:
+
+1. **Combining Multiple ML Algorithms**: Combines predictions from several algorithms (Random Forest, XGBoost, etc.) using BLP weights
+2. **K-fold Cross-Fitting**: Trains models on K-1 folds and predicts on the held-out fold
+3. **Full-Sample Inference**: Uses the entire dataset for final estimation
+4. **Repeated Sample-Splitting**: Averages across M repetitions for stability
+
+## Basic Workflow
+
+### 1. Simulate Data
+
+```{r simulate-data}
+library(ensembleHTE)
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Generate data
+n <- 500
+X1 <- rnorm(n)
+X2 <- rnorm(n)
+X3 <- rbinom(n, 1, 0.5)
+D <- rbinom(n, 1, 0.5)  # Treatment
+
+# Heterogeneous treatment effect
+tau <- 1 + 0.5 * X1
+Y <- 0.5 * X1 + 0.3 * X2 + D * tau + rnorm(n, sd = 0.5)
+
+data <- data.frame(Y = Y, D = D, X1 = X1, X2 = X2, X3 = X3)
+```
+
+### 2. Fit Ensemble HTE Model
+
+```{r fit-model}
+# Fit ensemble HTE model
+fit <- ensemble_hte(
+  formula = Y ~ X1 + X2 + X3,
+  treatment = D,
+  data = data,
+  algorithms = c("lm", "grf"),
+  M = 5,  # Number of repetitions
+  K = 3   # Number of cross-fitting folds
+)
+
+# View results
+print(fit)
+summary(fit)
+```
+
+### 3. Analyze Treatment Effect Heterogeneity
+
+```{r analysis}
+# Best Linear Predictor (BLP)
+blp_results <- blp(fit)
+print(blp_results)
+
+# Group Average Treatment Effects (GATES)
+gates_results <- gates(fit, n_groups = 3)
+print(gates_results)
+plot(gates_results)
+
+# Classification Analysis (CLAN)
+clan_results <- clan(fit)
+print(clan_results)
+plot(clan_results)
+```
+
+## Prediction Tasks
+
+The package also supports standard prediction tasks (without treatment effects):
+
+```{r prediction}
+# Fit ensemble prediction model
+pred_fit <- ensemble_pred(
+  formula = Y ~ X1 + X2 + X3,
+  data = data,
+  algorithms = c("lm", "grf"),
+  M = 5, K = 3
+)
+
+# Analyze predictions
+summary(pred_fit)
+
+# Group Averages
+gavs_results <- gavs(pred_fit, n_groups = 3)
+print(gavs_results)
+plot(gavs_results)
+```
+
+## Comparing Ranking Strategies
+
+Use `gates_compare()` or `gavs_compare()` to compare unrestricted vs. restricted ranking:
+  
+```{r compare}
+# Add a stratification variable
+data$income_group <- sample(c("low", "mid", "high"), n, replace = TRUE)
+
+# Fit model
+fit <- ensemble_hte(
+  formula = Y ~ X1 + X2 + X3,
+  treatment = D,
+  data = data,
+  M = 5, K = 3
+)
+
+# Compare ranking strategies
+comparison <- gates_compare(fit, strata = "income_group", n_groups = 3)
+print(comparison)
+plot(comparison)
+```
+
+## Using Subsets
+
+All analysis functions (`gates`, `blp`, `clan`, `gavs`, and their comparison versions) support a `subset` argument that allows you to evaluate results on a subset of observations. This is useful when:
+
+- The outcome is only observed for certain observations
+- You want to focus on a specific subpopulation
+- You need to exclude certain observations from analysis
+
+```{r subset-examples, eval=FALSE}
+# Subset with logical vector
+subset_logical <- data$X3 == 1  # Only observations where X3 == 1
+gavs_results <- gavs(fit, n_groups = 3, subset = subset_logical)
+
+# Subset with integer indices
+subset_indices <- which(data$income_group == "high")
+gates_results <- gates(fit, n_groups = 3, subset = subset_indices)
+
+# Explicitly use all observations
+blp_results <- blp(fit, subset = "all")
+```
+
+**Important notes:**
+- For `gates()` and `blp()`, the subset must include observations from both treatment and control groups
+- For `gavs()`, this is useful when outcomes are only observed for certain units (e.g., treatment effects on outcomes only observable under treatment)
+- A message will be printed indicating how many observations are used when a subset is applied
+
+## Tips and Best Practices
+
+1. **Number of algorithms**: Start with 2-4 diverse algorithms
+2. **Number of folds**: K=3 or K=5 recommended
+3. **Number of groups**: J=3 (terciles) is standard
+4. **Repetitions**: M=5-10 for exploration, M=50-100 for final results
+5. **Sample size**: Works best with n > 200
+
+## References
+Fava, B. (2025). Training and Testing with Multiple Splits: A Central Limit Theorem for Split-Sample Estimators. *arXiv preprint arXiv:2511.04957*.
+
+Chernozhukov, V., Demirer, M., Duflo, E., & Fernandez-Val, I. (2025). Fisher-Schultz Lecture: Generic Machine Learning Inference on Heterogeneous Treatment Effects in Randomized Experiments. *Econometrica*, 93(4), 1121-1164.
+
+## Getting Help
+
+- See `?ensemble_hte` and `?gates` for detailed function documentation
+- Report issues at: https://github.com/bfava/ensembleHTE/issues

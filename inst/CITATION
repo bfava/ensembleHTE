@@ -1,0 +1,11 @@
+bibentry(
+  bibtype  = "Misc",
+  title    = "Training and Testing with Multiple Splits: A Central Limit Theorem for Split-Sample Estimators",
+  author   = person("Bruno", "Fava"),
+  year     = "2025",
+  eprint   = "2511.04957",
+  archivePrefix = "arXiv",
+  primaryClass  = "econ.EM",
+  doi      = "10.48550/arXiv.2511.04957",
+  url      = "https://arxiv.org/abs/2511.04957"
+)

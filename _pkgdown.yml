@@ -1,0 +1,26 @@
+url: https://bfava.com/ensembleHTE/
+
+template:
+  bootstrap: 5
+
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+  components:
+    articles:
+      text: Articles
+      menu:
+        - text: "Introduction to ensembleHTE"
+          href: articles/microcredit-walkthrough.html
+        - text: "Complete Guide to ensembleHTE"
+          href: articles/ensembleHTE-complete-guide.html
+        - text: "Quick Guide to ensembleHTE"
+          href: articles/getting-started.html
+
+articles:
+  - title: Articles
+    contents:
+      - articles/microcredit-walkthrough
+      - ensembleHTE-complete-guide
+      - getting-started
+

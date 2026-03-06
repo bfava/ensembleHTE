@@ -1,13 +1,21 @@
 # ensembleHTE
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/bfava/ensembleHTE/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/bfava/ensembleHTE/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 ## Overview
 
-`ensembleHTE` implements an ensemble method for learning features of heterogeneous treatment effects in randomized controlled trials. The package focuses on estimating **Group Average Treatment Effects (GATES)** by sorting individuals into groups based on predicted treatment effects from multiple machine learning algorithms.
+`ensembleHTE` detects and characterizes heterogeneous treatment effects (HTE) in randomized experiments, and supports standard prediction tasks with valid downstream inference. It uses **repeated cross-fitting**—where every observation is used for both training and evaluation—and **combines predictions from multiple ML algorithms** to produce stable estimates and avoid the multiple-testing issues that arise from having to pick a single best algorithm.
 
-The key innovation is combining predictions from multiple ML algorithms through Best Linear Predictor (BLP) weights while using K-fold cross-fitting for model training and separate L-fold splits for ensemble calibration. This approach uses the **entire sample** for final GATES estimation, providing higher statistical power than existing split-sample methods while maintaining proper coverage.
+Two main entry points:
+
+- **`ensemble_hte()`** — estimate heterogeneous *treatment* effects.
+- **`ensemble_pred()`** — predict an outcome (no treatment structure needed).
+
+A suite of analysis functions—`blp()`, `gates()`, `gavs()`, `clan()`, and their restricted counterparts—lets you test for heterogeneity, characterize who is in each group, and compare targeting strategies.
+
+For the statistical foundations, see [Fava (2025)](https://bfava.com/files/Bruno_Fava_JMP.pdf).
 
 ## Installation
 
@@ -22,15 +30,21 @@ devtools::install_github("bfava/ensembleHTE")
 
 ```r
 library(ensembleHTE)
+data(microcredit)
 
 # 1. Fit ensemble HTE model
+covariates <- c("css_creditscorefinal", "lower_window",
+                "own_anybus", "max_yearsinbusiness", "css_assetvalue")
+
 fit <- ensemble_hte(
-  formula = Y ~ X1 + X2 + X3,
-  treatment = D,
-  data = mydata,
-  algorithms = c("lm", "grf"),
-  M = 5,  # Number of repetitions
-  K = 3   # Number of cross-fitting folds
+  Y = "exp_yrly_end",
+  D = "treat",
+  X = covariates,
+  data       = microcredit,
+  prop_score = "prop_score",
+  algorithms = c("grf", "glmnet", "xgboost"),
+  M = 20,
+  K = 4
 )
 
 # 2. View results
@@ -38,55 +52,49 @@ print(fit)
 summary(fit)
 
 # 3. Analyze treatment effect heterogeneity
-gates_results <- gates(fit, n_groups = 3)  # Group Average Treatment Effects
-blp_results <- blp(fit)                    # Best Linear Predictor
-clan_results <- clan(fit)                  # Classification Analysis
+blp_results   <- blp(fit)                    # Best Linear Predictor
+gates_results <- gates(fit, n_groups = 3)    # Group Average Treatment Effects
+clan_results  <- clan(fit, n_groups = 3)     # Classification Analysis
 
-# 4. Visualize results
+# 4. Visualize
 plot(gates_results)
 plot(clan_results)
+
+# --- Prediction task (no treatment structure) ---
+
+# Predict bank profits (observed only for borrowers who took a loan)
+has_loan <- microcredit$treat == 1 & microcredit$loan_size > 0
+
+fit_pred <- ensemble_pred(
+  Y    = "bank_profits_pp",
+  X    = covariates,
+  data = microcredit,
+  train_idx  = has_loan,
+  algorithms = c("grf", "glmnet", "xgboost"),
+  M = 20,
+  K = 4
+)
+
+summary(fit_pred)
+gavs_results <- gavs(fit_pred, n_groups = 3)
+plot(gavs_results)
 ```
-
-## Key Features
-
-- **GATES Estimation**: Sort individuals into groups by predicted treatment effects and estimate group-specific treatment effects
-- **Ensemble Learning**: Combines multiple ML algorithms (Random Forest, XGBoost, Neural Nets, etc.) using Best Linear Predictor weights
-- **K-fold Cross-Fitting**: Trains ML models on K-1 folds, generates out-of-sample predictions
-- **L-fold Calibration**: Uses separate fold structure to estimate optimal ensemble weights
-- **Full-Sample Inference**: Uses entire dataset for final GATES regression (no data wasted on hold-out sets)
-- **Higher Power**: Demonstrated improvements over CDDF and sequential aggregation methods
-- **Repeated Sample-Splitting**: Aggregates across M repetitions for stability
 
 ## Main Functions
 
 ### Estimation
 - `ensemble_hte()`: Fit ensemble heterogeneous treatment effect model
 - `ensemble_pred()`: Fit ensemble prediction model (without treatment effects)
-- `combine_ensembles()`: Combine multiple ensemble fits from different sessions
 
 ### Analysis
-- `gates()`: Compute Group Average Treatment Effects (GATES)
-- `blp()`: Compute Best Linear Predictor of CATE
-- `clan()`: Classification Analysis - characterize high/low effect groups
-- `gavs()`: Compute Group Averages for prediction tasks
-- `blp_pred()`: Best Linear Predictor for predictions
+- `blp()` / `blp_pred()`: Best Linear Predictor (test for heterogeneity / calibration)
+- `gates()`: Group Average Treatment Effects
+- `gavs()`: Group Averages for prediction tasks
+- `clan()`: Classification Analysis — characterize high/low effect groups
 
-### Comparison
-- `gates_restricted()`: Compare GATES between unrestricted and restricted ranking
-- `gavs_restricted()`: Compare GAVS between unrestricted and restricted ranking
-
-## Methodology
-
-This package implements the ensemble GATES estimator developed in Fava (2025). The approach:
-
-1. **K-fold Cross-Fitting**: Splits data into K folds; for each fold k, trains A machine learning algorithms on the remaining K-1 folds to predict individual treatment effects (ITEs)
-2. **L-fold Calibration**: Uses a separate L-fold split to estimate Best Linear Predictor weights that optimally combine the A algorithms' predictions
-3. **Ensemble Aggregation**: Combines predictions from multiple algorithms using estimated BLP weights: τ̂ᵢ = Σₐ β̂ₐ τ̂ᵢ,ₐ
-4. **Group Formation**: Sorts individuals by predicted ITEs (τ̂ᵢ) into J quantile groups
-5. **GATES Estimation**: Runs weighted regression on the **entire sample** to estimate group-specific average treatment effects
-6. **Repeated Splitting**: Repeats process M times and averages estimates for stability
-
-The key advantage over existing methods (Chernozhukov et al. 2025, Wager & Walther 2024) is using the full sample for inference rather than holding out data, which provides higher statistical power.
+### Restricted comparisons
+- `gates_restricted()`: Compare GATES under unrestricted vs. equity-constrained targeting
+- `gavs_restricted()`: Compare GAVS under unrestricted vs. equity-constrained targeting
 
 ## Getting Help
 
@@ -107,4 +115,4 @@ If you use this package in your research, please cite:
 
 ## License
 
-Apache License 2.0 - see LICENSE file for details
+Apache License 2.0 — see LICENSE file for details

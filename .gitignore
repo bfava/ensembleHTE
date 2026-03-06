@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+
+# R
+.Rhistory
+.RData
+*.Rproj.user/
+
+# Build and package artifacts
+*.Rcheck/
+*.tar.gz
+*.zip
+build.log
+Rplots.pdf
+**/Rplots.pdf
+
+# Vignettes
+inst/doc/
+
+# Knitr cache and output
+*_cache/
+*_files/
+*.html
+*.nb.html
+
+# pkgdown generated site output
+docs/

@@ -1,0 +1,100 @@
+# Combine Multiple Ensemble Objects
+
+Combines multiple ensemble fit objects (either `ensemble_hte_fit` or
+`ensemble_pred_fit`) that were run on the same data with the same
+specification. This allows users to run multiple estimation sessions
+(e.g., with different numbers of repetitions) and combine them to
+increase the total number of repetitions M.
+
+This is particularly useful when running computations on servers or
+clusters, where you can distribute the work across multiple sessions or
+nodes. For example, you can run M=50 repetitions on 5 different servers
+with M=10 each, save the results, and then combine them into a single
+object with M=50 total repetitions.
+
+The function validates that all objects have the same:
+
+- Class (all HTE or all pred)
+
+- Sample size (n)
+
+- Outcome variable name
+
+- Covariate names (must match exactly)
+
+- Number of folds (K)
+
+- Algorithms
+
+- Ensemble folds
+
+- Task type
+
+- Metalearner (for HTE objects)
+
+- Treatment variable (for HTE objects)
+
+## Usage
+
+``` r
+combine_ensembles(...)
+```
+
+## Arguments
+
+- ...:
+
+  Two or more ensemble fit objects of the same type (`ensemble_hte_fit`
+  or `ensemble_pred_fit`).
+
+## Value
+
+A combined ensemble fit object of the same class as the inputs, with the
+predictions/ITEs and splits concatenated across all inputs. The `M`
+value is updated to reflect the total number of repetitions.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+data(microcredit)
+covars <- c("age", "gender", "education", "hhinc_yrly_base",
+            "css_creditscorefinal")
+dat <- microcredit[, c("hhinc_yrly_end", "treat", covars)]
+
+# Run ensemble_hte in two separate sessions (e.g., on different servers)
+# Session 1:
+fit1 <- ensemble_hte(
+  hhinc_yrly_end ~ ., treatment = treat, data = dat,
+  prop_score = microcredit$prop_score,
+  algorithms = c("lm", "grf"), M = 5
+)
+saveRDS(fit1, "fit_session1.rds")
+
+# Session 2:
+fit2 <- ensemble_hte(
+  hhinc_yrly_end ~ ., treatment = treat, data = dat,
+  prop_score = microcredit$prop_score,
+  algorithms = c("lm", "grf"), M = 5
+)
+saveRDS(fit2, "fit_session2.rds")
+
+# Later, combine the results:
+fit1 <- readRDS("fit_session1.rds")
+fit2 <- readRDS("fit_session2.rds")
+fit_combined <- combine_ensembles(fit1, fit2)
+print(fit_combined)  # Shows M = 10
+
+# Works the same for ensemble_pred
+dat_pred <- microcredit[, c("bank_profits_pp", covars)]
+pred1 <- ensemble_pred(
+  bank_profits_pp ~ ., data = dat_pred,
+  train_idx = microcredit$loan_size > 0 & microcredit$treat == 1, M = 3
+)
+pred2 <- ensemble_pred(
+  bank_profits_pp ~ ., data = dat_pred,
+  train_idx = microcredit$loan_size > 0 & microcredit$treat == 1, M = 3
+)
+pred_combined <- combine_ensembles(pred1, pred2)
+} # }
+```

@@ -64,9 +64,9 @@ library(ensembleHTE)
 #> ── ensembleHTE v0.1.1 ──────────────────────────────────────────────────────────
 #> ℹ This package is under active development.
 #> ℹ Run `ensembleHTE::ensemble_news()` to check for updates.
-#> ℹ Please cite: Fava (2025). Run `citation('ensembleHTE')` for details.
+#> ℹ Please cite: Fava (2025). Run `citation("ensembleHTE")` for details.
 #> ℹ Report bugs or send suggestions at
-#>   <https://github.com/bfava/ensembleHTE/issues>
+#>   <https://github.com/bfava/ensembleHTE/issues> or brunovnfava@gmail.com
 data(microcredit)
 
 dim(microcredit)

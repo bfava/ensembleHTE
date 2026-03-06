@@ -29,9 +29,9 @@ gavs_restricted(
 - ensemble_fit:
 
   An object of class `ensemble_hte_fit` from
-  [`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
+  [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
   or `ensemble_pred_fit` from
-  [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md).
+  [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md).
 
 - restrict_by:
 
@@ -86,8 +86,7 @@ gavs_restricted(
   Character controlling which observations define the quantile cutoffs
   used to form groups. One of `"auto"` (default), `"all"`, or
   `"analysis"`. See
-  [`gavs`](https://bfava.github.io/ensembleHTE/reference/gavs.md) for
-  details.
+  [`gavs`](https://bfava.com/ensembleHTE/reference/gavs.md) for details.
 
 ## Value
 
@@ -128,7 +127,7 @@ on the same data using the same ensemble predictions from repetition
 
 1.  **Unrestricted**: groups are formed by ranking predictions within
     each fold (as in
-    [`gavs`](https://bfava.github.io/ensembleHTE/reference/gavs.md)).
+    [`gavs`](https://bfava.com/ensembleHTE/reference/gavs.md)).
 
 2.  **Restricted**: groups are formed by ranking predictions within each
     fold **and** within each level of the `restrict_by` variable.

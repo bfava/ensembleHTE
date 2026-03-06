@@ -17,7 +17,7 @@ summary(object, n_groups = 3, group_on = c("auto", "all", "analysis"), ...)
 - object:
 
   An object of class `ensemble_hte_fit` from
-  [`ensemble_hte`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md).
+  [`ensemble_hte`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md).
 
 - n_groups:
 
@@ -27,8 +27,8 @@ summary(object, n_groups = 3, group_on = c("auto", "all", "analysis"), ...)
 
   Character. How to form groups when `train_idx` was used. Passed
   through to
-  [`gates`](https://bfava.github.io/ensembleHTE/reference/gates.md). One
-  of `"auto"` (default), `"all"`, or `"analysis"`.
+  [`gates`](https://bfava.com/ensembleHTE/reference/gates.md). One of
+  `"auto"` (default), `"all"`, or `"analysis"`.
 
 - ...:
 

@@ -14,7 +14,7 @@ print(x, ...)
 - x:
 
   An object of class `blp_results` from
-  [`blp()`](https://bfava.github.io/ensembleHTE/reference/blp.md)
+  [`blp()`](https://bfava.com/ensembleHTE/reference/blp.md)
 
 - ...:
 

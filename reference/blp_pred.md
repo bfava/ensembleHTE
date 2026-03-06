@@ -79,9 +79,9 @@ For each repetition \\m = 1, \ldots, M\\:
 
 1.  The ensemble predictions from repetition \\m\\ are used as the
     regressor. These predictions were generated via cross-fitting in
-    [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md)
+    [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)
     or
-    [`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md),
+    [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md),
     so each observation's prediction is out-of-sample.
 
 2.  A single ordinary least squares regression is run: \$\$Y_i =

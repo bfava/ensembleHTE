@@ -18,7 +18,7 @@ print(x, max_rows = 15, ...)
 - x:
 
   An object of class `clan_results` from
-  [`clan()`](https://bfava.github.io/ensembleHTE/reference/clan.md)
+  [`clan()`](https://bfava.com/ensembleHTE/reference/clan.md)
 
 - max_rows:
 

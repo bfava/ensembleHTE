@@ -27,12 +27,12 @@ cost of borrower welfare. We use the dataset as a running example to
 illustrate the package’s main features through three exercises:
 
 1.  **Do microloans affect all borrowers equally?** We use
-    [`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
+    [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
     to detect and characterize heterogeneous treatment effects on
     business expenses.
 2.  **Is there a tradeoff between bank profits and borrower welfare?**
     We use
-    [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md)
+    [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)
     to predict which borrowers are most profitable for the bank, then
     ask whether those same borrowers also benefit the most—or whether
     lending to profitable borrowers comes at borrowers’ expense.
@@ -48,7 +48,7 @@ illustrate the package’s main features through three exercises:
 > using `M >= 100` to ensure stable inference. You can start with a
 > small `M` to verify your code, then scale up. If computation takes a
 > long time,
-> [`combine_ensembles()`](https://bfava.github.io/ensembleHTE/reference/combine_ensembles.md)
+> [`combine_ensembles()`](https://bfava.com/ensembleHTE/reference/combine_ensembles.md)
 > lets you split the work across sessions and merge the results
 > afterward.
 
@@ -132,7 +132,7 @@ hte_covars <- c(
 
 ### Fitting the ensemble
 
-[`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
+[`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
 trains an ensemble of ML algorithms to detect heterogeneous treatment
 effects. It uses repeated cross-fitting—controlled by `M` (number of
 repetitions) and `K` (number of folds)—to produce stable predictions and
@@ -446,7 +446,7 @@ fit_hte <- ensemble_hte(
 ```
 
 If computation takes a long time,
-[`combine_ensembles()`](https://bfava.github.io/ensembleHTE/reference/combine_ensembles.md)
+[`combine_ensembles()`](https://bfava.com/ensembleHTE/reference/combine_ensembles.md)
 lets you split the work across sessions and merge the results afterward.
 
 ------------------------------------------------------------------------
@@ -466,7 +466,7 @@ This is a central question in [Athey, Fava, Karlan, Osman and Zinman
 that this is not a treatment-effect question: we are simply predicting
 an outcome (bank profits), then examining what that prediction implies
 for other outcomes. The
-[`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md)
+[`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)
 function handles this type of prediction task.
 
 ### Predicting an outcome that is only partially observed
@@ -476,7 +476,7 @@ individuals who were offered a loan *and* actually took it—the bank only
 earns revenue on disbursed loans. For everyone else, bank profits are
 undefined.
 
-[`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md)
+[`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)
 handles this through the `train_idx` argument: we tell the function to
 **train** on the subset where profits are observed, while still
 generating **predictions for everyone**. This matters because we want to
@@ -531,7 +531,7 @@ fit_pred <- ensemble_pred(
 ```
 
 As with
-[`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md),
+[`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md),
 using `M >= 100` repetitions and a richer set of algorithms (`grf`,
 `glmnet`, `nnet`, `xgboost`) is recommended for real applications.
 
@@ -620,11 +620,10 @@ Let’s look at each of these in more detail.
 ### Does the model predict well? BLP for predictions
 
 Let’s examine the calibration diagnostic more closely.
-[`blp_pred()`](https://bfava.github.io/ensembleHTE/reference/blp_pred.md)
-is the prediction analogue of
-[`blp()`](https://bfava.github.io/ensembleHTE/reference/blp.md). It
-regresses the observed outcome on the ML predictions and tests two
-things:
+[`blp_pred()`](https://bfava.com/ensembleHTE/reference/blp_pred.md) is
+the prediction analogue of
+[`blp()`](https://bfava.com/ensembleHTE/reference/blp.md). It regresses
+the observed outcome on the ML predictions and tests two things:
 
 - **Is the intercept close to zero?** If so, the predictions are not
   systematically biased.
@@ -668,7 +667,7 @@ group. If the model is useful, higher-prediction groups should have
 higher observed profits.
 
 Because `bank_profits_pp` is only observed for borrowers who took a
-loan, [`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md)
+loan, [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md)
 automatically restricts the analysis to those observations:
 
 ``` r
@@ -726,8 +725,8 @@ significant (p \< 0.001).
 ### Do profitable borrowers also benefit from the loan? GATES
 
 This is the key question. We use
-[`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md) with
-a twist: we keep the groups defined by *predicted bank profits*, but we
+[`gates()`](https://bfava.com/ensembleHTE/reference/gates.md) with a
+twist: we keep the groups defined by *predicted bank profits*, but we
 switch the outcome to *household income*. In other words, among
 borrowers the bank would rank as most profitable, what happens to their
 income when they are offered a loan?
@@ -735,7 +734,7 @@ income when they are offered a loan?
 Because household income is observed for everyone (treated and control),
 no subsetting is needed here. We pass the `outcome`, `treatment`, and
 `prop_score` arguments to tell
-[`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md) to
+[`gates()`](https://bfava.com/ensembleHTE/reference/gates.md) to
 estimate treatment effects on a different outcome than the one the model
 was trained on:
 
@@ -939,9 +938,9 @@ to identify profitable borrowers—or can both goals coexist?
 ### How restricted targeting works
 
 The
-[`gavs_restricted()`](https://bfava.github.io/ensembleHTE/reference/gavs_restricted.md)
+[`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md)
 and
-[`gates_restricted()`](https://bfava.github.io/ensembleHTE/reference/gates_restricted.md)
+[`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md)
 functions compare two targeting strategies:
 
 - **Unrestricted**: rank all applicants by predicted profitability and
@@ -1174,26 +1173,26 @@ sorting.
 
 ## Summary
 
-| Exercise   | Question                                                       | Key functions                                                                                                                                                                                                                                                                                                                                                              |
-|------------|----------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Part 1** | Do microloans affect all borrowers equally?                    | [`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md) → [`blp()`](https://bfava.github.io/ensembleHTE/reference/blp.md), [`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md), [`clan()`](https://bfava.github.io/ensembleHTE/reference/clan.md)                                                                                |
-| **Part 2** | Is there a tradeoff between bank profits and borrower welfare? | [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md) → [`blp_pred()`](https://bfava.github.io/ensembleHTE/reference/blp_pred.md), [`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md), [`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md), [`clan()`](https://bfava.github.io/ensembleHTE/reference/clan.md) |
-| **Part 3** | What happens if the lender must maintain income balance?       | [`gavs_restricted()`](https://bfava.github.io/ensembleHTE/reference/gavs_restricted.md), [`gates_restricted()`](https://bfava.github.io/ensembleHTE/reference/gates_restricted.md)                                                                                                                                                                                         |
+| Exercise   | Question                                                       | Key functions                                                                                                                                                                                                                                                                                                                                |
+|------------|----------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Part 1** | Do microloans affect all borrowers equally?                    | [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md) → [`blp()`](https://bfava.com/ensembleHTE/reference/blp.md), [`gates()`](https://bfava.com/ensembleHTE/reference/gates.md), [`clan()`](https://bfava.com/ensembleHTE/reference/clan.md)                                                                          |
+| **Part 2** | Is there a tradeoff between bank profits and borrower welfare? | [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md) → [`blp_pred()`](https://bfava.com/ensembleHTE/reference/blp_pred.md), [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md), [`gates()`](https://bfava.com/ensembleHTE/reference/gates.md), [`clan()`](https://bfava.com/ensembleHTE/reference/clan.md) |
+| **Part 3** | What happens if the lender must maintain income balance?       | [`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md), [`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md)                                                                                                                                                                       |
 
 A few things worth remembering:
 
 - **`train_idx`** is essential when your outcome is only observed for a
   subset of individuals. The models train on that subset but predict for
   everyone.
-- **[`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md)
-  can use a different outcome** than the one the model was trained on.
-  This is how we asked: “among the groups formed by predicted bank
-  profits, what are the treatment effects on household income?” Just
-  pass the `outcome`, `treatment`, and `prop_score` arguments.
-- **[`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
+- **[`gates()`](https://bfava.com/ensembleHTE/reference/gates.md) can
+  use a different outcome** than the one the model was trained on. This
+  is how we asked: “among the groups formed by predicted bank profits,
+  what are the treatment effects on household income?” Just pass the
+  `outcome`, `treatment`, and `prop_score` arguments.
+- **[`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
   objects can also use
-  [`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md)**
-  with a different outcome. For example, after estimating heterogeneous
+  [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md)** with a
+  different outcome. For example, after estimating heterogeneous
   treatment effects on business expenses, you could use
   `gavs(fit_hte, outcome = "bank_profits_pp")` to ask whether borrowers
   predicted to increase their expenditures more also generate higher
@@ -1206,7 +1205,7 @@ A few things worth remembering:
   computationally feasible—[Athey et
   al. (2025)](https://bfava.com/files/Tradeoffs_in_Microcredit.pdf) uses
   `M = 500`.
-  [`combine_ensembles()`](https://bfava.github.io/ensembleHTE/reference/combine_ensembles.md)
+  [`combine_ensembles()`](https://bfava.com/ensembleHTE/reference/combine_ensembles.md)
   can merge results across sessions if computation time is a concern.
 
 ## References

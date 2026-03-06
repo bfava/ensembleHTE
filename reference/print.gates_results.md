@@ -14,7 +14,7 @@ print(x, ...)
 - x:
 
   An object of class `gates_results` from
-  [`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md)
+  [`gates()`](https://bfava.com/ensembleHTE/reference/gates.md)
 
 - ...:
 

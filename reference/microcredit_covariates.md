@@ -14,7 +14,7 @@ microcredit_covariates
 ## Format
 
 A character vector of length 24 containing column names from the
-[`microcredit`](https://bfava.github.io/ensembleHTE/reference/microcredit.md)
+[`microcredit`](https://bfava.com/ensembleHTE/reference/microcredit.md)
 dataset: `"css_creditscorefinal"`, `"css_yearsataddress"`,
 `"own_house"`, `"sari"`, `"own_anybus"`, `"max_yearsinbusiness"`,
 `"css_regularworkers"`, `"css_traveltime"`, `"css_travelcost"`,
@@ -37,7 +37,7 @@ Three Countries. Working paper.
 
 ## See also
 
-[`microcredit`](https://bfava.github.io/ensembleHTE/reference/microcredit.md)
+[`microcredit`](https://bfava.com/ensembleHTE/reference/microcredit.md)
 
 ## Examples
 

@@ -354,9 +354,9 @@ averages](getting-started_files/figure-html/prediction-output-1.png)
 ## Comparing Ranking Strategies
 
 Use
-[`gates_restricted()`](https://bfava.github.io/ensembleHTE/reference/gates_restricted.md)
+[`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md)
 or
-[`gavs_restricted()`](https://bfava.github.io/ensembleHTE/reference/gavs_restricted.md)
+[`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md)
 to compare unrestricted vs. restricted ranking. Here we test whether
 requiring income-balanced loan allocation reduces the lender’s ability
 to identify profitable borrowers:
@@ -449,12 +449,11 @@ blp_results <- blp(fit, subset = "all")
 ```
 
 **Important notes:** - For
-[`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md) and
-[`blp()`](https://bfava.github.io/ensembleHTE/reference/blp.md), the
-subset must include observations from both treatment and control
-groups - For
-[`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md), this
-is useful when outcomes are only observed for certain units (e.g.,
+[`gates()`](https://bfava.com/ensembleHTE/reference/gates.md) and
+[`blp()`](https://bfava.com/ensembleHTE/reference/blp.md), the subset
+must include observations from both treatment and control groups - For
+[`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md), this is
+useful when outcomes are only observed for certain units (e.g.,
 treatment effects on outcomes only observable under treatment) - When
 using `subset`, the `group_on` argument controls which observations
 define the group cutoffs. The default (`group_on = "auto"`) uses the
@@ -463,9 +462,9 @@ observations for `ensemble_hte` fits, or the `train_idx` subset for
 `ensemble_pred` fits trained on a subset. Set `group_on = "all"` to
 always use all observations, or `group_on = "analysis"` to form groups
 within the analysis subset. The same applies to
-[`gates_restricted()`](https://bfava.github.io/ensembleHTE/reference/gates_restricted.md)
+[`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md)
 and
-[`gavs_restricted()`](https://bfava.github.io/ensembleHTE/reference/gavs_restricted.md). -
+[`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md). -
 A message will be printed indicating how many observations are used when
 a subset is applied
 
@@ -541,7 +540,7 @@ arXiv:2511.04957*.
 ## Getting Help
 
 - See
-  [`?ensemble_hte`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
-  and [`?gates`](https://bfava.github.io/ensembleHTE/reference/gates.md)
-  for detailed function documentation
+  [`?ensemble_hte`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
+  and [`?gates`](https://bfava.com/ensembleHTE/reference/gates.md) for
+  detailed function documentation
 - Report issues at: <https://github.com/bfava/ensembleHTE/issues>

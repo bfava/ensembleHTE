@@ -14,7 +14,7 @@ print(x, ...)
 - x:
 
   An object of class `gates_restricted_results` from
-  [`gates_restricted()`](https://bfava.github.io/ensembleHTE/reference/gates_restricted.md)
+  [`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md)
 
 - ...:
 

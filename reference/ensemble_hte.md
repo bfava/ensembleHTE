@@ -444,10 +444,10 @@ The estimation proceeds as follows:
 
 The resulting \\M\\ vectors of ITE predictions are stored and used by
 the downstream analysis functions
-([`blp`](https://bfava.github.io/ensembleHTE/reference/blp.md),
-[`gates`](https://bfava.github.io/ensembleHTE/reference/gates.md),
-[`clan`](https://bfava.github.io/ensembleHTE/reference/clan.md),
-[`gavs`](https://bfava.github.io/ensembleHTE/reference/gavs.md)), which
+([`blp`](https://bfava.com/ensembleHTE/reference/blp.md),
+[`gates`](https://bfava.com/ensembleHTE/reference/gates.md),
+[`clan`](https://bfava.com/ensembleHTE/reference/clan.md),
+[`gavs`](https://bfava.com/ensembleHTE/reference/gavs.md)), which
 compute their estimands separately for each repetition and then average
 the estimates and standard errors across the \\M\\ repetitions.
 
@@ -504,13 +504,13 @@ for estimating heterogeneous treatment effects using machine learning.
 
 ## See also
 
-[`gates`](https://bfava.github.io/ensembleHTE/reference/gates.md) for
-Group Average Treatment Effects analysis,
-[`blp`](https://bfava.github.io/ensembleHTE/reference/blp.md) for Best
-Linear Predictor analysis,
-[`clan`](https://bfava.github.io/ensembleHTE/reference/clan.md) for
+[`gates`](https://bfava.com/ensembleHTE/reference/gates.md) for Group
+Average Treatment Effects analysis,
+[`blp`](https://bfava.com/ensembleHTE/reference/blp.md) for Best Linear
+Predictor analysis,
+[`clan`](https://bfava.com/ensembleHTE/reference/clan.md) for
 Classification Analysis,
-[`ensemble_pred`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md)
+[`ensemble_pred`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)
 for standard prediction without treatment effects
 
 ## Examples

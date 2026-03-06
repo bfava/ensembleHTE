@@ -12,18 +12,18 @@ arise from having to pick a single best algorithm.
 
 Two main entry points:
 
-- **[`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)**
+- **[`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)**
   — estimate heterogeneous *treatment* effects.
-- **[`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md)**
+- **[`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)**
   — predict an outcome (no treatment structure needed).
 
 A suite of analysis
-functions—[`blp()`](https://bfava.github.io/ensembleHTE/reference/blp.md),
-[`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md),
-[`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md),
-[`clan()`](https://bfava.github.io/ensembleHTE/reference/clan.md), and
-their restricted counterparts—lets you test for heterogeneity,
-characterize who is in each group, and compare targeting strategies.
+functions—[`blp()`](https://bfava.com/ensembleHTE/reference/blp.md),
+[`gates()`](https://bfava.com/ensembleHTE/reference/gates.md),
+[`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md),
+[`clan()`](https://bfava.com/ensembleHTE/reference/clan.md), and their
+restricted counterparts—lets you test for heterogeneity, characterize
+who is in each group, and compare targeting strategies.
 
 For the statistical foundations, see [Fava
 (2025)](https://bfava.com/files/Bruno_Fava_JMP.pdf).
@@ -95,28 +95,28 @@ plot(gavs_results)
 
 ### Estimation
 
-- [`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md):
+- [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md):
   Fit ensemble heterogeneous treatment effect model
-- [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md):
+- [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md):
   Fit ensemble prediction model (without treatment effects)
 
 ### Analysis
 
-- [`blp()`](https://bfava.github.io/ensembleHTE/reference/blp.md) /
-  [`blp_pred()`](https://bfava.github.io/ensembleHTE/reference/blp_pred.md):
+- [`blp()`](https://bfava.com/ensembleHTE/reference/blp.md) /
+  [`blp_pred()`](https://bfava.com/ensembleHTE/reference/blp_pred.md):
   Best Linear Predictor (test for heterogeneity / calibration)
-- [`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md):
-  Group Average Treatment Effects
-- [`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md):
-  Group Averages for prediction tasks
-- [`clan()`](https://bfava.github.io/ensembleHTE/reference/clan.md):
+- [`gates()`](https://bfava.com/ensembleHTE/reference/gates.md): Group
+  Average Treatment Effects
+- [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md): Group
+  Averages for prediction tasks
+- [`clan()`](https://bfava.com/ensembleHTE/reference/clan.md):
   Classification Analysis — characterize high/low effect groups
 
 ### Restricted comparisons
 
-- [`gates_restricted()`](https://bfava.github.io/ensembleHTE/reference/gates_restricted.md):
+- [`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md):
   Compare GATES under unrestricted vs. equity-constrained targeting
-- [`gavs_restricted()`](https://bfava.github.io/ensembleHTE/reference/gavs_restricted.md):
+- [`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md):
   Compare GAVS under unrestricted vs. equity-constrained targeting
 
 ## Getting Help

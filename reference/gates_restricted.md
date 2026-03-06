@@ -32,9 +32,9 @@ gates_restricted(
 - ensemble_fit:
 
   An object of class `ensemble_hte_fit` from
-  [`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
+  [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
   or `ensemble_pred_fit` from
-  [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md).
+  [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md).
 
 - restrict_by:
 
@@ -69,7 +69,7 @@ gates_restricted(
   For `ensemble_pred_fit` only. The treatment variable:
 
   - Character string: column name in the `data` used in
-    [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md)
+    [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)
 
   - Numeric vector: binary treatment variable (must have same length as
     data)
@@ -121,7 +121,7 @@ gates_restricted(
   Character controlling which observations define the quantile cutoffs
   used to form groups. One of `"auto"` (default), `"all"`, or
   `"analysis"`. See
-  [`gates`](https://bfava.github.io/ensembleHTE/reference/gates.md) for
+  [`gates`](https://bfava.com/ensembleHTE/reference/gates.md) for
   details.
 
 ## Value
@@ -168,7 +168,7 @@ on the same data using the same ensemble predictions from repetition
 
 1.  **Unrestricted**: groups are formed by ranking predictions within
     each fold (as in
-    [`gates`](https://bfava.github.io/ensembleHTE/reference/gates.md)).
+    [`gates`](https://bfava.com/ensembleHTE/reference/gates.md)).
 
 2.  **Restricted**: groups are formed by ranking predictions within each
     fold **and** within each level of the `restrict_by` variable.

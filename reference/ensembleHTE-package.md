@@ -9,11 +9,11 @@ cross-fitting to improve statistical power.
 
 The package provides two main estimation functions:
 
-- [`ensemble_hte`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md):
+- [`ensemble_hte`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md):
   Estimates individual treatment effects (ITE) using metalearner
   strategies (R-learner, T-learner, S-learner, X-learner)
 
-- [`ensemble_pred`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md):
+- [`ensemble_pred`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md):
   Estimates outcome predictions using an ensemble of ML algorithms
 
 Key features:
@@ -31,29 +31,29 @@ Key features:
 
 ## Main functions
 
-- [`ensemble_hte`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md):
+- [`ensemble_hte`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md):
   Fit ensemble HTE model with metalearners
 
-- [`ensemble_pred`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md):
+- [`ensemble_pred`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md):
   Fit ensemble prediction model
 
-- [`gates`](https://bfava.github.io/ensembleHTE/reference/gates.md):
-  Group Average Treatment Effects
+- [`gates`](https://bfava.com/ensembleHTE/reference/gates.md): Group
+  Average Treatment Effects
 
-- [`blp`](https://bfava.github.io/ensembleHTE/reference/blp.md): Best
-  Linear Predictor of CATE
+- [`blp`](https://bfava.com/ensembleHTE/reference/blp.md): Best Linear
+  Predictor of CATE
 
-- [`clan`](https://bfava.github.io/ensembleHTE/reference/clan.md):
+- [`clan`](https://bfava.com/ensembleHTE/reference/clan.md):
   Classification Analysis by covariate
 
-- [`gavs`](https://bfava.github.io/ensembleHTE/reference/gavs.md): Group
+- [`gavs`](https://bfava.com/ensembleHTE/reference/gavs.md): Group
   Averages
 
 ## See also
 
 Useful links:
 
-- <https://bfava.github.io/ensembleHTE/>
+- <https://bfava.com/ensembleHTE/>
 
 - <https://github.com/bfava/ensembleHTE>
 

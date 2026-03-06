@@ -14,7 +14,7 @@ print(x, ...)
 - x:
 
   An object of class `gavs_restricted_results` from
-  [`gavs_restricted()`](https://bfava.github.io/ensembleHTE/reference/gavs_restricted.md)
+  [`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md)
 
 - ...:
 

@@ -69,16 +69,6 @@
 
     
     
-<style type="text/css">
-/* Widen the text column when previewing with html_vignette */
-.container-fluid.main-container {
-  max-width: 960px;
-}
-body {
-  max-width: 960px;
-  margin: 0 auto;
-}
-</style>
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
@@ -140,12 +130,6 @@ offer or not. A follow-up survey measured outcomes 11–22 months
 later.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bfava.com/ensembleHTE/">ensembleHTE</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; ── <span style="color: #0000BB;">ensembleHTE</span> <span style="font-style: italic;">v0.1.1</span> ──────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> This package is under active development.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `ensembleHTE::ensemble_news()` to check for updates.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Please cite: Fava (2025). Run `citation("ensembleHTE")` for details.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Report bugs or send suggestions at</span></span>
-<span><span class="co">#&gt;   <span style="color: #0000BB; font-style: italic;">&lt;https://github.com/bfava/ensembleHTE/issues&gt;</span> or <span style="color: #0000BB;">brunovnfava@gmail.com</span></span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">microcredit</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">microcredit</span><span class="op">)</span></span>
@@ -681,7 +665,6 @@ recommended for real applications.</p>
 <span><span class="co">#&gt;   intercept:         -0.01 (SE: 0.59, p: 0.988) </span></span>
 <span><span class="co">#&gt;   slope:             0.99 (SE: 0.07, p: 0.000) ***</span></span>
 <span><span class="co">#&gt;   -&gt; Intercept close to 0 and slope close to 1 indicate good calibration</span></span>
-<span><span class="co">#&gt; Note: ML model trained on 650 of 1113 observations; GAVS evaluated on 650 observations. Use subset = "all" to use all observations.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Group Averages (GAVS) with 3 groups:</span></span>
 <span><span class="co">#&gt;   Group    Estimate   Std.Error    Pr(&gt;|t|)</span></span>
@@ -760,7 +743,6 @@ who took a loan, <code><a href="../reference/gavs.html">gavs()</a></code> automa
 analysis to those observations:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gavs_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gavs.html">gavs</a></span><span class="op">(</span><span class="va">fit_pred</span>, n_groups <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Note: ML model trained on 650 of 1113 observations; GAVS evaluated on 650 observations. Use subset = "all" to use all observations.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">gavs_res</span><span class="op">)</span></span>
 <span><span class="co">#&gt; GAVS Results (Group Averages)</span></span>
 <span><span class="co">#&gt; =============================</span></span>
@@ -828,7 +810,6 @@ was trained on:</p>
 <span>  prop_score <span class="op">=</span> <span class="st">"prop_score"</span>,</span>
 <span>  n_groups   <span class="op">=</span> <span class="fl">3</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Note: ML model trained on 650 of 1113 observations; GATES evaluated on 1113 observations. Use subset = "train" to restrict to training observations.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">gates_hhinc</span><span class="op">)</span></span>
 <span><span class="co">#&gt; GATES Results</span></span>
 <span><span class="co">#&gt; =============</span></span>
@@ -899,7 +880,6 @@ treatment-effect estimates given the available sample.</p>
 </h3>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">clan_pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/clan.html">clan</a></span><span class="op">(</span><span class="va">fit_pred</span>, n_groups <span class="op">=</span> <span class="fl">3</span>, variables <span class="op">=</span> <span class="va">profit_covars</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Note: ML model trained on 650 of 1113 observations; CLAN evaluated on 1113 observations. Use subset = "train" to restrict to training observations.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">clan_pred</span><span class="op">)</span></span>
 <span><span class="co">#&gt; CLAN Results (Classification Analysis)</span></span>
 <span><span class="co">#&gt; =======================================</span></span>
@@ -1068,7 +1048,6 @@ strategies:</p>
 <span>  n_groups    <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  subset      <span class="op">=</span> <span class="st">"train"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Note: ML model trained on 650 of 1113 observations; GAVS Comparison evaluated on 650 observations. Use subset = "all" to use all observations.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">gavs_r</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; GAVS Comparison: Unrestricted vs Restricted Ranking</span></span>
@@ -1157,7 +1136,6 @@ equity constraint?</p>
 <span>  prop_score  <span class="op">=</span> <span class="st">"prop_score"</span>,</span>
 <span>  n_groups    <span class="op">=</span> <span class="fl">3</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Note: ML model trained on 650 of 1113 observations; GATES Comparison evaluated on 1113 observations. Use subset = "train" to restrict to training observations.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">gates_r</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; GATES Comparison: Unrestricted vs Restricted Ranking</span></span>

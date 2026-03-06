@@ -61,12 +61,6 @@ survey measured outcomes 11–22 months later.
 
 ``` r
 library(ensembleHTE)
-#> ── ensembleHTE v0.1.1 ──────────────────────────────────────────────────────────
-#> ℹ This package is under active development.
-#> ℹ Run `ensembleHTE::ensemble_news()` to check for updates.
-#> ℹ Please cite: Fava (2025). Run `citation("ensembleHTE")` for details.
-#> ℹ Report bugs or send suggestions at
-#>   <https://github.com/bfava/ensembleHTE/issues> or brunovnfava@gmail.com
 data(microcredit)
 
 dim(microcredit)
@@ -589,7 +583,6 @@ summary(fit_pred)
 #>   intercept:         -0.01 (SE: 0.59, p: 0.988) 
 #>   slope:             0.99 (SE: 0.07, p: 0.000) ***
 #>   -> Intercept close to 0 and slope close to 1 indicate good calibration
-#> Note: ML model trained on 650 of 1113 observations; GAVS evaluated on 650 observations. Use subset = "all" to use all observations.
 #> 
 #> Group Averages (GAVS) with 3 groups:
 #>   Group    Estimate   Std.Error    Pr(>|t|)
@@ -672,7 +665,6 @@ automatically restricts the analysis to those observations:
 
 ``` r
 gavs_res <- gavs(fit_pred, n_groups = 3)
-#> Note: ML model trained on 650 of 1113 observations; GAVS evaluated on 650 observations. Use subset = "all" to use all observations.
 print(gavs_res)
 #> GAVS Results (Group Averages)
 #> =============================
@@ -746,7 +738,6 @@ gates_hhinc <- gates(
   prop_score = "prop_score",
   n_groups   = 3
 )
-#> Note: ML model trained on 650 of 1113 observations; GATES evaluated on 1113 observations. Use subset = "train" to restrict to training observations.
 print(gates_hhinc)
 #> GATES Results
 #> =============
@@ -819,7 +810,6 @@ estimates given the available sample.
 
 ``` r
 clan_pred <- clan(fit_pred, n_groups = 3, variables = profit_covars)
-#> Note: ML model trained on 650 of 1113 observations; CLAN evaluated on 1113 observations. Use subset = "train" to restrict to training observations.
 print(clan_pred)
 #> CLAN Results (Classification Analysis)
 #> =======================================
@@ -988,7 +978,6 @@ gavs_r <- gavs_restricted(
   n_groups    = 3,
   subset      = "train"
 )
-#> Note: ML model trained on 650 of 1113 observations; GAVS Comparison evaluated on 650 observations. Use subset = "all" to use all observations.
 print(gavs_r)
 #> 
 #> GAVS Comparison: Unrestricted vs Restricted Ranking
@@ -1083,7 +1072,6 @@ gates_r <- gates_restricted(
   prop_score  = "prop_score",
   n_groups    = 3
 )
-#> Note: ML model trained on 650 of 1113 observations; GATES Comparison evaluated on 1113 observations. Use subset = "train" to restrict to training observations.
 print(gates_r)
 #> 
 #> GATES Comparison: Unrestricted vs Restricted Ranking

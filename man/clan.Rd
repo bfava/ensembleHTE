@@ -76,6 +76,8 @@ An object of class `clan_results` containing:
   \item fit_type: "hte" or "pred" depending on input
   \item M: number of repetitions
   \item scaled: whether variables were scaled
+  \item variable_sds: named numeric vector of per-variable standard deviations
+    (NA for binary variables). Used by the \code{plot} method for on-the-fly rescaling.
   \item group_on: how groups are formed (\"auto\", \"all\", or \"analysis\")
   \item call: the function call
 }
@@ -89,11 +91,30 @@ This function implements the multiple-split estimation strategy developed by
 Fava (2025), which combines predictions from multiple machine learning algorithms
 into an ensemble and averages CLAN estimates across M repetitions of K-fold
 cross-fitting to improve statistical power.
-
-CLAN compares the mean of covariates between units in the top group of predicted
-values versus: (1) bottom group, (2) all other units (else), and (3) all units.
-Groups are formed by ranking predictions within each fold.
 }
+\section{Estimation Procedure}{
+
+For each repetition \eqn{m = 1, \ldots, M}:
+\enumerate{
+  \item Observations are assigned to \code{n_groups} quantile-based groups
+    by ranking the ensemble predictions from repetition \eqn{m}
+    \emph{within each fold}. Group 1 contains the lowest predicted values
+    and group \code{n_groups} the highest. Forming groups within folds
+    ensures independence between group assignment and out-of-sample
+    predictions.
+  \item For each covariate, the mean is computed within the top group, the
+    bottom group, the "else" group (all groups except the top), and all
+    observations. Standard errors are computed analytically from group
+    variances (or via regression with cluster-robust SEs when
+    \code{individual_id} was specified).
+  \item Three differences are computed: top minus bottom, top minus else,
+    and top minus all.
+}
+The final reported estimates and standard errors are the simple averages of
+the per-repetition estimates and standard errors across all \eqn{M}
+repetitions.
+}
+
 \examples{
 \donttest{
 data(microcredit)

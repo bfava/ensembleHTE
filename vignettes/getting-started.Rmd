@@ -1,10 +1,13 @@
 ---
-title: "Getting Started with ensembleHTE"
+title: "Quick Guide to ensembleHTE"
 author: "Bruno Fava"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
 vignette: >
-  %\VignetteIndexEntry{Getting Started with ensembleHTE}
+  %\VignetteIndexEntry{Quick Guide to ensembleHTE}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -13,11 +16,10 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = FALSE
+  message = FALSE,
+  warning = FALSE
 )
-# Set eval = TRUE for data simulation chunks; ML-heavy chunks remain eval = FALSE
-CAN_RUN <- requireNamespace("ensembleHTE", quietly = TRUE) &&
-           requireNamespace("grf", quietly = TRUE)
+PRECOMPUTED <- file.exists("precomputed/fit_hte_quick.rds")
 ```
 
 ## Introduction
@@ -46,39 +48,52 @@ This package improves upon existing approaches by:
 
 ## Basic Workflow
 
-### 1. Simulate Data
+### 1. Load Data
 
-```{r simulate-data, eval = CAN_RUN}
+We use the `microcredit` dataset that ships with the package. It contains data
+from a randomized microfinance experiment in the Philippines where microloans
+were randomly offered to applicants.
+
+```{r load-data}
 library(ensembleHTE)
+data(microcredit)
 
-# Set seed for reproducibility
-set.seed(123)
+dim(microcredit)
 
-# Generate data
-n <- 500
-X1 <- rnorm(n)
-X2 <- rnorm(n)
-X3 <- rbinom(n, 1, 0.5)
-D <- rbinom(n, 1, 0.5)  # Treatment
+# Variables used throughout this guide
+hte_covars <- c("css_creditscorefinal", "own_anybus",
+                "max_yearsinbusiness", "css_assetvalue")
+has_loan <- microcredit$treat == 1 & microcredit$loan_size > 0
 
-# Heterogeneous treatment effect
-tau <- 1 + 0.5 * X1
-Y <- 0.5 * X1 + 0.3 * X2 + D * tau + rnorm(n, sd = 0.5)
-
-data <- data.frame(Y = Y, D = D, X1 = X1, X2 = X2, X3 = X3)
+# Income quintiles (used for restricted comparisons)
+microcredit$hhinc_quintile <- cut(
+  microcredit$hhinc_yrly_base,
+  breaks = quantile(microcredit$hhinc_yrly_base, probs = seq(0, 1, by = 0.2)),
+  labels = paste0("Q", 1:5),
+  include.lowest = TRUE
+)
 ```
 
 ### 2. Fit Ensemble HTE Model
 
-```{r fit-model}
+We test whether the effect of being offered a microloan on business expenses
+varies across borrowers.
+
+```{r fit-model, eval = FALSE}
+# Select covariates
+hte_covars <- c("css_creditscorefinal", "own_anybus",
+                "max_yearsinbusiness", "css_assetvalue")
+
 # Fit ensemble HTE model
 fit <- ensemble_hte(
-  formula = Y ~ X1 + X2 + X3,
-  treatment = D,
-  data = data,
+  Y = "exp_yrly_end",
+  D = "treat",
+  X = hte_covars,
+  data = microcredit,
+  prop_score = "prop_score",
   algorithms = c("lm", "grf"),
-  M = 5,  # Number of repetitions
-  K = 3   # Number of cross-fitting folds
+  M = 10,   # Use M >= 100 for final results
+  K = 4
 )
 
 # View results
@@ -86,9 +101,15 @@ print(fit)
 summary(fit)
 ```
 
+```{r fit-model-output, echo = FALSE, eval = PRECOMPUTED}
+fit <- readRDS("precomputed/fit_hte_quick.rds")
+print(fit)
+summary(fit)
+```
+
 ### 3. Analyze Treatment Effect Heterogeneity
 
-```{r analysis}
+```{r analysis, eval = PRECOMPUTED, fig.alt = c("GATES coefficient plot", "CLAN coefficient plot")}
 # Best Linear Predictor (BLP)
 blp_results <- blp(fit)
 print(blp_results)
@@ -99,22 +120,30 @@ print(gates_results)
 plot(gates_results)
 
 # Classification Analysis (CLAN)
-clan_results <- clan(fit)
+clan_results <- clan(fit, n_groups = 3)
 print(clan_results)
 plot(clan_results)
 ```
 
 ## Prediction Tasks
 
-The package also supports standard prediction tasks (without treatment effects):
+The package also supports standard prediction tasks (without treatment effects).
+Here we predict bank profitability per peso lent, training only on borrowers
+who actually took a loan (where bank profits are observed):
 
-```{r prediction}
+```{r prediction, eval = FALSE}
+# Identify borrowers with observed bank profits
+has_loan <- microcredit$treat == 1 & microcredit$loan_size > 0
+
 # Fit ensemble prediction model
 pred_fit <- ensemble_pred(
-  formula = Y ~ X1 + X2 + X3,
-  data = data,
+  Y = "bank_profits_pp",
+  X = c("css_creditscorefinal", "own_anybus", "css_assetvalue",
+        "age", "gender", "hhinc_yrly_base"),
+  data = microcredit,
+  train_idx = has_loan,
   algorithms = c("lm", "grf"),
-  M = 5, K = 3
+  M = 10, K = 4
 )
 
 # Analyze predictions
@@ -126,24 +155,28 @@ print(gavs_results)
 plot(gavs_results)
 ```
 
+```{r prediction-output, echo = FALSE, eval = PRECOMPUTED, fig.alt = "GAVS bar chart of group averages"}
+pred_fit <- readRDS("precomputed/fit_pred_quick.rds")
+summary(pred_fit)
+gavs_results <- gavs(pred_fit, n_groups = 3)
+print(gavs_results)
+plot(gavs_results)
+```
+
 ## Comparing Ranking Strategies
 
-Use `gates_restricted()` or `gavs_restricted()` to compare unrestricted vs. restricted ranking:
-  
-```{r compare}
-# Add a stratification variable
-data$income_group <- sample(c("low", "mid", "high"), n, replace = TRUE)
+Use `gates_restricted()` or `gavs_restricted()` to compare unrestricted vs.
+restricted ranking. Here we test whether requiring income-balanced loan
+allocation reduces the lender's ability to identify profitable borrowers:
 
-# Fit model
-fit <- ensemble_hte(
-  formula = Y ~ X1 + X2 + X3,
-  treatment = D,
-  data = data,
-  M = 5, K = 3
+```{r compare, eval = PRECOMPUTED, fig.alt = "Comparison of unrestricted vs restricted ranking strategies"}
+# Compare targeting strategies
+comparison <- gavs_restricted(
+  pred_fit,
+  restrict_by = "hhinc_quintile",
+  n_groups = 3,
+  subset = "train"
 )
-
-# Compare ranking strategies
-comparison <- gates_restricted(fit, restrict_by = "income_group", n_groups = 3)
 print(comparison)
 plot(comparison)
 ```
@@ -156,13 +189,13 @@ All analysis functions (`gates`, `blp`, `clan`, `gavs`, and their comparison ver
 - You want to focus on a specific subpopulation
 - You need to exclude certain observations from analysis
 
-```{r subset-examples, eval=FALSE}
-# Subset with logical vector
-subset_logical <- data$X3 == 1  # Only observations where X3 == 1
-gavs_results <- gavs(fit, n_groups = 3, subset = subset_logical)
+```{r subset-examples, eval = PRECOMPUTED}
+# Subset with logical vector (e.g., only business owners)
+subset_biz <- microcredit$own_anybus == 1
+gavs_results <- gavs(pred_fit, n_groups = 3, subset = subset_biz)
 
 # Subset with integer indices
-subset_indices <- which(data$income_group == "high")
+subset_indices <- which(microcredit$lower_window == 1)
 gates_results <- gates(fit, n_groups = 3, subset = subset_indices)
 
 # Explicitly use all observations
@@ -178,9 +211,9 @@ blp_results <- blp(fit, subset = "all")
 ## Tips and Best Practices
 
 1. **Number of algorithms**: Start with 2-4 diverse algorithms
-2. **Number of folds**: K=3 or K=5 recommended
+2. **Number of folds**: K=3 or K=4 recommended
 3. **Number of groups**: J=3 (terciles) is standard
-4. **Repetitions**: M=5-10 for exploration, M=50-100 for final results
+4. **Repetitions**: M=5-10 for exploration, M>=100 for final results
 5. **Sample size**: Works best with n > 200
 
 ## Panel Data
@@ -188,16 +221,31 @@ blp_results <- blp(fit, subset = "all")
 For panel or longitudinal data (multiple observations per individual), use the
 `individual_id` argument. This ensures proper fold splitting (all observations
 for an individual stay in the same fold) and uses cluster-robust standard errors.
+The `microcredit` dataset is cross-sectional, so this example uses simulated data:
 
 ```{r panel-data, eval = FALSE}
-# Panel data: individuals observed over multiple time periods
+# Simulate panel data: 200 individuals x 4 periods
+set.seed(123)
+N <- 200; T_periods <- 4
+panel_data <- data.frame(
+  id     = rep(1:N, each = T_periods),
+  period = rep(1:T_periods, times = N),
+  D      = rep(rbinom(N, 1, 0.5), each = T_periods),
+  X1     = rnorm(N * T_periods),
+  X2     = rnorm(N * T_periods)
+)
+panel_data$Y <- 2 + panel_data$D * (1 + panel_data$X1) +
+  0.5 * panel_data$X2 + rnorm(N * T_periods)
+
+# Fit with individual_id for cluster-aware cross-fitting
 fit <- ensemble_hte(
-  Y ~ X1 + X2 + X3,
+  Y = "Y",
+  D = "D",
+  X = c("X1", "X2"),
   data = panel_data,
-  treatment = D,
-  individual_id = individual_id,
-  algorithms = c("lm", "ranger"),
-  M = 5, K = 3
+  individual_id = "id",
+  algorithms = c("lm", "grf"),
+  M = 10, K = 3
 )
 
 # All downstream analyses automatically use clustered SEs
@@ -206,7 +254,7 @@ blp(fit)
 clan(fit)
 ```
 
-See the complete guide vignette for a full panel data example with simulated data.
+See the complete guide vignette for a full panel data example.
 
 ## Performance Tips
 
@@ -221,8 +269,6 @@ Computation time scales with `M * K * length(algorithms)`. Some guidelines:
 
 ## References
 Fava, B. (2025). Training and Testing with Multiple Splits: A Central Limit Theorem for Split-Sample Estimators. *arXiv preprint arXiv:2511.04957*.
-
-Chernozhukov, V., Demirer, M., Duflo, E., & Fernandez-Val, I. (2025). Fisher-Schultz Lecture: Generic Machine Learning Inference on Heterogeneous Treatment Effects in Randomized Experiments. *Econometrica*, 93(4), 1121-1164.
 
 ## Getting Help
 

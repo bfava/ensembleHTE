@@ -94,7 +94,7 @@ microcredit
 \description{
 Data from a randomized controlled trial that evaluated the impact of
 individual-liability microloans on borrowers in the Philippines. Loans
-were randomly assigned to applicants via credit scoring. The dataset 
+were randomly assigned to applicants depending on credit score. The dataset 
 contains 1113 observations and 51 variables, prepared following the 
 processing in Athey, Fava, Karlan, Osman & Zinman (2025).
 }

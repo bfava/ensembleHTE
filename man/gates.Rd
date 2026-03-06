@@ -40,6 +40,7 @@ Ignored for \code{ensemble_hte_fit} (uses the treatment from the fit).}
 \item{prop_score}{For \code{ensemble_pred_fit} only. Propensity score:
 \itemize{
   \item NULL (default): estimated as mean of treatment variable
+  \item Character string: column name in the \code{data} used in the ensemble function
   \item Numeric value: constant propensity score for all observations
   \item Numeric vector: observation-specific propensity scores
 }
@@ -121,13 +122,36 @@ This function implements the multiple-split estimation strategy developed by
 Fava (2025), which combines predictions from multiple machine learning algorithms
 into an ensemble and averages GATES estimates across M repetitions of K-fold
 cross-fitting to improve statistical power.
-
-The method uses weighted least squares regression of Y on group indicators
-interacted with (D - propensity_score), with weights equal to
-1 / (propensity_score * (1 - propensity_score)). Groups are formed by
-ranking predicted values within each fold.
-Robust (HC1) standard errors are computed.
 }
+\section{Estimation Procedure}{
+
+For each repetition \eqn{m = 1, \ldots, M}:
+\enumerate{
+  \item Observations are assigned to \code{n_groups} quantile-based groups by
+    ranking the ensemble predictions from repetition \eqn{m} \emph{within each
+    fold}. Group 1 contains the lowest predicted values and group
+    \code{n_groups} the highest. Forming groups within folds ensures that
+    group assignment is independent of the model used to generate predictions
+    for that observation (since predictions are out-of-sample within each fold).
+  \item A single weighted least squares regression is run on all observations:
+    \deqn{Y_i = \alpha + \sum_{g=1}^{G} \gamma_g \, \mathbf{1}\{i \in g\}(D_i - e(X_i)) + \varepsilon_i}
+    where \eqn{e(X_i)} is the propensity score. Weights are
+    \eqn{1 / (e(X_i)(1 - e(X_i)))}. Each \eqn{\gamma_g} estimates the
+    average treatment effect for group \eqn{g}.
+  \item HC1 heteroskedasticity-robust standard errors are computed
+    (or cluster-robust SEs when \code{individual_id} was specified).
+}
+The final reported estimates and standard errors are the simple averages of
+the per-repetition estimates and standard errors across all \eqn{M} repetitions.
+
+Three heterogeneity tests are reported:
+\itemize{
+  \item \strong{Top-Bottom}: difference between the top and bottom groups.
+  \item \strong{All}: weighted average of all group effects (estimates the overall ATE).
+  \item \strong{Top-All}: difference between the top group and the overall ATE.
+}
+}
+
 \examples{
 \donttest{
 data(microcredit)

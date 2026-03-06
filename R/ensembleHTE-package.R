@@ -39,6 +39,7 @@
 #' @import data.table
 #' @import mlr3
 #' @import mlr3learners
+#' @importFrom cli cli_rule cli_bullets cli_format_method
 #' @importFrom rlang ensym as_string
 #' @importFrom stats predict coef cor median pnorm qnorm quantile sd var
 #' @importFrom utils modifyList head
@@ -71,11 +72,17 @@ utils::globalVariables(c(
 #' @keywords internal
 .onAttach <- function(libname, pkgname) {
 
-  packageStartupMessage(
-    "ensembleHTE v", utils::packageVersion("ensembleHTE"), " (beta)\n",
-    "This package is under active development.\n",
-    "Run ensemble_news() to check for updates.\n",
-    "Please cite: Fava (2025). Run citation(\"ensembleHTE\") for details.\n",
-    "Please report bugs or suggestions at https://github.com/bfava/ensembleHTE/issues or email brunovnfava@gmail.com"
-  )
+  ver <- utils::packageVersion("ensembleHTE")
+
+  msg <- cli_format_method({
+    cli_rule(left = "{.pkg ensembleHTE} {.emph v{ver}}")
+    cli_bullets(c(
+      "i" = "This package is under active development.",
+      "i" = "Run {.run ensembleHTE::ensemble_news()} to check for updates.",
+      "i" = "Please cite: Fava (2025). Run {.run citation('ensembleHTE')} for details.",
+      "i" = "Report bugs or send suggestions at {.url https://github.com/bfava/ensembleHTE/issues}"
+    ))
+  })
+
+  packageStartupMessage(paste(msg, collapse = "\n"))
 }

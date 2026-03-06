@@ -14,7 +14,34 @@
 #' \itemize{
 #'   \item \strong{Formula interface}: Specify \code{formula}, \code{treatment}, and \code{data}
 #'   \item \strong{Matrix interface}: Specify \code{Y}, \code{X}, and \code{D} directly
+#'     (as vectors/matrices, or as column names to be looked up in \code{data})
 #' }
+#'
+#' @section Cross-Fitting Procedure:
+#' The estimation proceeds as follows:
+#' \enumerate{
+#'   \item The data is randomly split into \eqn{K} folds. This random splitting
+#'     is repeated \eqn{M} times (each time with a fresh random partition).
+#'   \item For each repetition \eqn{m = 1, \ldots, M} and each fold
+#'     \eqn{k = 1, \ldots, K}:
+#'     \itemize{
+#'       \item Each ML algorithm in \code{algorithms} is trained on the
+#'         \eqn{K - 1} folds that exclude fold \eqn{k}, using the chosen
+#'         \code{metalearner} strategy.
+#'       \item Out-of-sample ITE predictions are generated for all observations
+#'         in fold \eqn{k}.
+#'     }
+#'   \item The per-algorithm ITE predictions are combined into a single ensemble
+#'     prediction using the \code{ensemble_strategy} (cross-validated BLP or
+#'     simple average).
+#'   \item This produces one complete vector of out-of-sample ITE predictions per
+#'     repetition (each observation appears in exactly one test fold per repetition).
+#' }
+#' The resulting \eqn{M} vectors of ITE predictions are stored and used by the
+#' downstream analysis functions (\code{\link{blp}}, \code{\link{gates}},
+#' \code{\link{clan}}, \code{\link{gavs}}), which compute their estimands
+#' separately for each repetition and then average the estimates and standard
+#' errors across the \eqn{M} repetitions.
 #'
 #' @section Metalearners:
 #' The function supports four metalearner strategies for estimating individual
@@ -64,19 +91,24 @@
 #'     \item A variable containing the column name: \code{treat_col <- "D"; treatment = treat_col}
 #'     \item Ignored when using matrix interface (use \code{D} parameter instead)
 #'   }
-#' @param data A data.frame or data.table containing the variables in the formula.
-#'   Required if using formula interface; ignored if \code{Y}, \code{X}, \code{D}
-#'   are provided.
-#' @param Y Numeric vector of outcomes. Use this with \code{X} and \code{D} as an
-#'   alternative to the formula interface.
-#' @param X Matrix or data.frame of covariates. Use this with \code{Y} and \code{D}
-#'   as an alternative to the formula interface.
-#' @param D Numeric vector of treatment indicators (0/1). Must contain only 0s
-#'   and 1s. Other encodings (e.g., 1/2, -1/1, TRUE/FALSE, factor) are not
-#'   supported. Use this with \code{Y} and \code{X} as an alternative to the
+#' @param data A data.frame or data.table containing the variables referenced in
+#'   the formula, or in \code{Y}, \code{X}, \code{D} when those are given as
+#'   column names.
+#' @param Y Numeric vector of outcomes, or a string with the column name in
+#'   \code{data}. Use this with \code{X} and \code{D} as an alternative to the
 #'   formula interface.
+#' @param X Matrix, data.frame, or character vector of column names in
+#'   \code{data}. When a character vector is provided, the columns are extracted
+#'   from \code{data}. Use this with \code{Y} and \code{D} as an alternative to
+#'   the formula interface.
+#'
+#'   Example: \code{X = c("age", "gender", "income")} or
+#'   \code{X = microcredit_covariates}.
+#' @param D Numeric vector of treatment indicators (0/1), or a string with the
+#'   column name in \code{data}. Must contain only 0s and 1s.
 #' @param prop_score Numeric vector of propensity scores (probability of treatment
-#'   given covariates). Must be strictly between 0 and 1 (exclusive). If \code{NULL}
+#'   given covariates), a single string naming a column in \code{data}, or a
+#'   scalar constant. Must be strictly between 0 and 1 (exclusive). If \code{NULL}
 #'   (default), assumes constant propensity equal to the sample treatment proportion
 #'   (appropriate for randomized experiments).
 #' @param M Integer. Number of sample splitting repetitions (default: 2). Higher
@@ -284,6 +316,16 @@
 #'   algorithms = c("lm", "grf"), M = 5, K = 5
 #' )
 #'
+#' # Column-name interface (equivalent, no need to subset data)
+#' fit_names <- ensemble_hte(
+#'   Y = "hhinc_yrly_end",
+#'   X = microcredit_covariates,
+#'   D = "treat",
+#'   data = microcredit,
+#'   prop_score = "prop_score",
+#'   algorithms = c("lm", "grf"), M = 5, K = 5
+#' )
+#'
 #' # With propensity scores and X-learner
 #' fit <- ensemble_hte(
 #'   hhinc_yrly_end ~ ., treatment = treat, data = dat,
@@ -374,7 +416,22 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
   # Validate common inputs
   algorithms <- validate_common_inputs(M, K, algorithms, ensemble_folds, n_cores)
   
-  # Validate prop_score if provided
+  # Resolve prop_score column name (if a single string referencing data)
+  prop_score_var <- NULL
+  if (!is.null(prop_score) && is.character(prop_score) && length(prop_score) == 1) {
+    if (!is.null(data)) {
+      if (prop_score %in% names(data)) {
+        prop_score_var <- prop_score
+        prop_score <- data[[prop_score_var]]
+      } else {
+        stop("Column '", prop_score, "' (passed as prop_score) not found in data.")
+      }
+    } else {
+      stop("'data' must be provided when prop_score is a column name string.")
+    }
+  }
+  
+  # Validate prop_score if provided (after column-name resolution)
   if (!is.null(prop_score)) {
     if (!is.numeric(prop_score) || any(prop_score <= 0 | prop_score >= 1)) {
       stop("Propensity scores must be strictly between 0 and 1 (exclusive). ",
@@ -389,6 +446,47 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
     }
   }
   
+  # Resolve Y, X, D when given as column name(s) referencing data
+  # Y: scalar string -> column name for outcome
+  # X: character vector -> column names for covariates
+  # D: scalar string -> column name for treatment
+  Y_is_name <- is.character(Y) && length(Y) == 1 && !is.null(data)
+  X_is_names <- is.character(X) && !is.null(data)
+  D_is_name <- is.character(D) && length(D) == 1 && !is.null(data)
+
+  if (Y_is_name || X_is_names || D_is_name) {
+    if (is.null(data)) {
+      stop("'data' must be provided when Y, X, or D are column name strings.")
+    }
+    if (!is.data.table(data)) {
+      data <- as.data.table(data)
+    }
+
+    if (Y_is_name) {
+      outcome_var <- Y
+      if (!outcome_var %in% names(data)) {
+        stop("Column '", outcome_var, "' (passed as Y) not found in data.")
+      }
+      Y <- data[[outcome_var]]
+    }
+    if (D_is_name) {
+      treatment_var <- D
+      if (!treatment_var %in% names(data)) {
+        stop("Column '", treatment_var, "' (passed as D) not found in data.")
+      }
+      D <- data[[treatment_var]]
+    }
+    if (X_is_names) {
+      missing_cols <- setdiff(X, names(data))
+      if (length(missing_cols) > 0) {
+        stop("The following columns (passed as X) are not in data: ",
+             paste(missing_cols, collapse = ", "))
+      }
+      covariate_vars <- X
+      X <- data[, ..covariate_vars]
+    }
+  }
+
   # Determine which interface is being used
   use_matrix_interface <- !is.null(Y) && !is.null(X) && !is.null(D)
   use_formula_interface <- !is.null(formula) && !is.null(data)
@@ -402,7 +500,7 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
   
 
   if (use_matrix_interface) {
-    # Matrix interface: Y, X, D provided directly
+    # Matrix interface: Y, X, D provided directly (or resolved from column names)
     
     # Validate inputs
     if (is.factor(Y)) {
@@ -435,21 +533,28 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
     }
     
     # Convert X to data.table
-    X <- as.data.table(X)
+    if (!is.data.table(X)) {
+      X <- as.data.table(X)
+    }
     
     # Generate default column names if needed (fallback for data.frames)
     if (is.null(names(X)) || any(names(X) == "")) {
       names(X) <- paste0("X", seq_len(ncol(X)))
     }
     
-    # Create combined data for storage
-    data <- cbind(data.table(Y = Y, D = D), X)
+    # Set variable names if not already set (from column-name resolution)
+    if (!exists("outcome_var", inherits = FALSE)) outcome_var <- "Y"
+    if (!exists("treatment_var", inherits = FALSE)) treatment_var <- "D"
+    if (!exists("covariate_vars", inherits = FALSE)) covariate_vars <- names(X)
+    
+    # Create combined data for storage (if not already provided)
+    if (is.null(data)) {
+      data <- cbind(data.table(Y = Y, D = D), X)
+    }
     
     # Create a formula for consistency
-    formula <- as.formula(paste("Y ~", paste(names(X), collapse = " + ")))
-    treatment_var <- "D"
-    outcome_var <- "Y"
-    covariate_vars <- names(X)
+    formula <- as.formula(paste(outcome_var, "~",
+                                paste(covariate_vars, collapse = " + ")))
     
   } else if (use_formula_interface) {
     # Formula interface
@@ -467,9 +572,10 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
       stop("treatment must be specified when using formula interface")
     }
     
+    # Determine outcome variable
     outcome_var <- all.vars(formula)[1]
     
-    # Handle formula processing
+    # Determine covariates from formula RHS
     if (length(formula) == 3) {
       # Has RHS (e.g., Y ~ X1 + X2 or Y ~ . or Y ~ . - Z)
       rhs <- formula[[3]]
@@ -481,8 +587,8 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
         # Get all columns except outcome and treatment
         all_cols <- names(data)
         covariate_vars <- setdiff(all_cols, c(outcome_var, treatment_var))
-        if (!is.null(prop_score) && is.character(prop_score)) {
-          covariate_vars <- setdiff(covariate_vars, prop_score)
+        if (!is.null(prop_score_var)) {
+          covariate_vars <- setdiff(covariate_vars, prop_score_var)
         }
         
         # Handle exclusions (e.g., Y ~ . - Z - W)
@@ -499,6 +605,10 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
     } else {
       stop("Formula must include covariates (e.g., Y ~ . or Y ~ X1 + X2)")
     }
+    
+    # Rebuild formula to reflect actual covariates used
+    formula <- as.formula(paste(outcome_var, "~",
+                                paste(covariate_vars, collapse = " + ")))
     
     # Extract data
     Y <- data[[outcome_var]]
@@ -524,6 +634,18 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
     }
     
   } else {
+    # Check if the user tried the matrix interface but some args are NULL
+    # (e.g., D = df$nonexistent silently returns NULL)
+    null_args <- c(
+      if ("Y" %in% names(cl) && is.null(Y)) "Y",
+      if ("X" %in% names(cl) && is.null(X)) "X",
+      if ("D" %in% names(cl) && is.null(D)) "D"
+    )
+    if (length(null_args) > 0) {
+      stop(paste0(paste(null_args, collapse = ", "),
+                  if (length(null_args) == 1) " is NULL. " else " are NULL. ",
+                  "Did you pass a non-existent column name (e.g., df$wrong_name)?"))
+    }
     stop("Must provide either (formula, treatment, data) or (Y, X, D)")
   }
   
@@ -1065,41 +1187,17 @@ summary.ensemble_hte_fit <- function(object, n_groups = 3, group_on = c("auto", 
   cat("Observations: ", object$n, "\n", sep = "")
   cat("Repetitions:  ", object$M, "\n", sep = "")
   
-  # ITE Distribution - calculate per repetition, then average
-  ite_stats_by_rep <- lapply(1:object$M, function(m) {
-    ite_m <- object$ite[[m]]
-    data.frame(
-      min = min(ite_m),
-      q1 = quantile(ite_m, 0.25),
-      median = median(ite_m),
-      mean = mean(ite_m),
-      q3 = quantile(ite_m, 0.75),
-      max = max(ite_m),
-      sd = sd(ite_m),
-      pct_positive = mean(ite_m > 0) * 100
-    )
-  })
-  ite_stats <- do.call(rbind, ite_stats_by_rep)
-  
-  cat("\nITE Distribution (averaged across ", object$M, " repetitions):\n", sep = "")
-  cat("  Min:               ", round(mean(ite_stats$min), 4), "\n", sep = "")
-  cat("  1st Qu:            ", round(mean(ite_stats$q1), 4), "\n", sep = "")
-  cat("  Median:            ", round(mean(ite_stats$median), 4), "\n", sep = "")
-  cat("  Mean:              ", round(mean(ite_stats$mean), 4), "\n", sep = "")
-  cat("  3rd Qu:            ", round(mean(ite_stats$q3), 4), "\n", sep = "")
-  cat("  Max:               ", round(mean(ite_stats$max), 4), "\n", sep = "")
-  cat("  Std. Dev:          ", round(mean(ite_stats$sd), 4), "\n", sep = "")
-  cat("  % positive:        ", round(mean(ite_stats$pct_positive), 1), "%\n", sep = "")
-  
   # BLP Analysis
   blp_result <- blp(object)
   cat("\nBest Linear Predictor (BLP):\n")
-  cat("  beta1 (ATE):       ", sprintf("%.4f", blp_result$estimates[term == "beta1", estimate]),
-      " (SE: ", sprintf("%.4f", blp_result$estimates[term == "beta1", se]), 
-      ", p: ", sprintf("%.4f", blp_result$estimates[term == "beta1", p_value]), ")\n", sep = "")
-  cat("  beta2 (HET):       ", sprintf("%.4f", blp_result$estimates[term == "beta2", estimate]),
-      " (SE: ", sprintf("%.4f", blp_result$estimates[term == "beta2", se]),
-      ", p: ", sprintf("%.4f", blp_result$estimates[term == "beta2", p_value]), ")\n", sep = "")
+  cat("  beta1 (ATE):       ", sprintf("%.2f", blp_result$estimates[term == "beta1", estimate]),
+      " (SE: ", sprintf("%.2f", blp_result$estimates[term == "beta1", se]), 
+      ", p: ", sprintf("%.3f", blp_result$estimates[term == "beta1", p_value]), ") ",
+      get_stars(blp_result$estimates[term == "beta1", p_value]), "\n", sep = "")
+  cat("  beta2 (HET):       ", sprintf("%.2f", blp_result$estimates[term == "beta2", estimate]),
+      " (SE: ", sprintf("%.2f", blp_result$estimates[term == "beta2", se]),
+      ", p: ", sprintf("%.3f", blp_result$estimates[term == "beta2", p_value]), ") ",
+      get_stars(blp_result$estimates[term == "beta2", p_value]), "\n", sep = "")
   
   # Interpretation
   het_pval <- blp_result$estimates[term == "beta2", p_value]
@@ -1117,7 +1215,7 @@ summary.ensemble_hte_fit <- function(object, n_groups = 3, group_on = c("auto", 
   cat("  ", paste(rep("-", 44), collapse = ""), "\n", sep = "")
   for (i in 1:nrow(gates_result$estimates)) {
     stars <- get_stars(gates_result$estimates$p_value[i])
-    cat(sprintf("  %5d  %10.4f  %10.4f  %10.4f %s\n",
+    cat(sprintf("  %5d  %10.2f  %10.2f  %10.3f %s\n",
                 gates_result$estimates$group[i],
                 gates_result$estimates$estimate[i],
                 gates_result$estimates$se[i],
@@ -1128,9 +1226,9 @@ summary.ensemble_hte_fit <- function(object, n_groups = 3, group_on = c("auto", 
   # Top-bottom test
   tb <- gates_result$top_bottom
   tb_stars <- get_stars(tb$p_value)
-  cat("\n  Top - Bottom:  ", sprintf("%.4f", tb$estimate),
-      " (SE: ", sprintf("%.4f", tb$se),
-      ", p: ", sprintf("%.4f", tb$p_value), ") ", tb_stars, "\n", sep = "")
+  cat("\n  Top - Bottom:  ", sprintf("%.2f", tb$estimate),
+      " (SE: ", sprintf("%.2f", tb$se),
+      ", p: ", sprintf("%.3f", tb$p_value), ") ", tb_stars, "\n", sep = "")
   
   cat("\n---\nSignif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n")
   

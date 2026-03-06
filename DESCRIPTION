@@ -1,7 +1,7 @@
 Package: ensembleHTE
 Type: Package
 Title: Ensemble Methods for Learning Features of Heterogeneous Treatment Effects
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: c(
     person("Bruno", "Fava", email = "brunovnfava@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0009-0002-8218-516X"))
@@ -21,6 +21,7 @@ Depends:
 Imports:
     stats,
     methods,
+    cli,
     rlang,
     data.table,
     ggplot2,
@@ -43,5 +44,5 @@ Suggests:
     gbm,
     ranger
 VignetteBuilder: knitr
-URL: https://github.com/bfava/ensembleHTE
+URL: https://bfava.com/ensembleHTE/, https://github.com/bfava/ensembleHTE
 BugReports: https://github.com/bfava/ensembleHTE/issues

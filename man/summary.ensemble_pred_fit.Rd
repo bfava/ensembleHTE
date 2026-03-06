@@ -21,7 +21,6 @@ Invisibly returns a \code{summary.ensemble_pred_fit} object containing:
   \item n: Total number of observations
   \item n_train: Number of training observations
   \item M: Number of repetitions
-  \item prediction_summary: Summary statistics for predictions
   \item metrics: Prediction accuracy metrics (R-squared, RMSE, MAE, correlation)
   \item blp: BLP calibration test results
   \item gavs: GAVS group average results

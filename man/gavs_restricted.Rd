@@ -79,11 +79,25 @@ ranked into groups.
 This function implements the analysis from Fava (2025) to test whether
 ranking by predicted values within subgroups (e.g., income quintiles,
 education levels) yields different targeting results than global ranking.
-
-The key statistical challenge is computing correct standard errors for the
-difference between the two strategies, since they use the same data. This
-is handled by computing the cross-covariance between regression estimates.
 }
+\section{Estimation Procedure}{
+
+For each repetition \eqn{m = 1, \ldots, M}, two GAVS regressions are run
+on the same data using the same ensemble predictions from repetition \eqn{m}:
+\enumerate{
+  \item \strong{Unrestricted}: groups are formed by ranking predictions
+    within each fold (as in \code{\link{gavs}}).
+  \item \strong{Restricted}: groups are formed by ranking predictions within
+    each fold \strong{and} within each level of the \code{restrict_by}
+    variable.
+}
+The difference between unrestricted and restricted estimates is computed for
+each repetition, with standard errors accounting for the cross-covariance
+between the two regressions (since they share the same data). The final
+reported estimates and standard errors are the simple averages across all
+\eqn{M} repetitions.
+}
+
 \examples{
 \donttest{
 data(microcredit)

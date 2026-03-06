@@ -47,6 +47,7 @@ Ignored for \code{ensemble_hte_fit} (uses the treatment from the fit).}
 \item{prop_score}{For \code{ensemble_pred_fit} only. Propensity score:
 \itemize{
   \item NULL (default): estimated as mean of treatment variable
+  \item Character string: column name in the \code{data} used in the ensemble function
   \item Numeric value: constant propensity score for all observations
   \item Numeric vector: observation-specific propensity scores
 }
@@ -102,11 +103,25 @@ ranked into groups.
 This function implements the analysis from Fava (2025) to test whether
 ranking by predicted treatment effects within subgroups (e.g., income quintiles,
 education levels) yields different treatment effect estimates than global ranking.
-
-The key statistical challenge is computing correct standard errors for the
-difference between the two strategies, since they use the same data. This
-is handled by computing the cross-covariance between regression estimates.
 }
+\section{Estimation Procedure}{
+
+For each repetition \eqn{m = 1, \ldots, M}, two GATES regressions are run
+on the same data using the same ensemble predictions from repetition \eqn{m}:
+\enumerate{
+  \item \strong{Unrestricted}: groups are formed by ranking predictions
+    within each fold (as in \code{\link{gates}}).
+  \item \strong{Restricted}: groups are formed by ranking predictions within
+    each fold \strong{and} within each level of the \code{restrict_by}
+    variable.
+}
+The difference between unrestricted and restricted estimates is computed for
+each repetition, with standard errors accounting for the cross-covariance
+between the two regressions (since they share the same data). The final
+reported estimates and standard errors are the simple averages across all
+\eqn{M} repetitions.
+}
+
 \examples{
 \donttest{
 data(microcredit)

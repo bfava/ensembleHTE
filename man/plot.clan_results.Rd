@@ -4,7 +4,13 @@
 \alias{plot.clan_results}
 \title{Plot method for clan_results objects}
 \usage{
-\method{plot}{clan_results}(x, comparison = c("top_bottom", "top_else", "top_all"), alpha = 0.05, ...)
+\method{plot}{clan_results}(
+  x,
+  comparison = c("top_bottom", "top_else", "top_all"),
+  alpha = 0.05,
+  scale = TRUE,
+  ...
+)
 }
 \arguments{
 \item{x}{An object of class \code{clan_results} from \code{clan()}}
@@ -12,6 +18,13 @@
 \item{comparison}{Which comparison to plot: "top_bottom", "top_else", or "top_all"}
 
 \item{alpha}{Significance level for confidence intervals (default 0.05)}
+
+\item{scale}{Logical. If \code{TRUE} (default), non-binary variables are
+rescaled to standard-deviation units for plotting, making coefficients
+comparable across variables with different scales. This rescaling is
+applied on the fly regardless of whether \code{scale} was set in the
+original \code{clan()} call. Set \code{FALSE} to plot in the original
+units of each variable.}
 
 \item{...}{Additional arguments (currently unused)}
 }

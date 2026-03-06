@@ -27,7 +27,6 @@ fit <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = data,
                     algorithms = c("lm", "grf"), M = 5, K = 3)
 
 ite_mat <- ite(fit)
-avg_ite <- rowMeans(ite_mat)
 }
 
 }

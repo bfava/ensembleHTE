@@ -44,23 +44,28 @@ Required if \code{Y}, \code{X}, \code{D} are not provided.}
   \item Ignored when using matrix interface (use \code{D} parameter instead)
 }}
 
-\item{data}{A data.frame or data.table containing the variables in the formula.
-Required if using formula interface; ignored if \code{Y}, \code{X}, \code{D}
-are provided.}
+\item{data}{A data.frame or data.table containing the variables referenced in
+the formula, or in \code{Y}, \code{X}, \code{D} when those are given as
+column names.}
 
-\item{Y}{Numeric vector of outcomes. Use this with \code{X} and \code{D} as an
-alternative to the formula interface.}
-
-\item{X}{Matrix or data.frame of covariates. Use this with \code{Y} and \code{D}
-as an alternative to the formula interface.}
-
-\item{D}{Numeric vector of treatment indicators (0/1). Must contain only 0s
-and 1s. Other encodings (e.g., 1/2, -1/1, TRUE/FALSE, factor) are not
-supported. Use this with \code{Y} and \code{X} as an alternative to the
+\item{Y}{Numeric vector of outcomes, or a string with the column name in
+\code{data}. Use this with \code{X} and \code{D} as an alternative to the
 formula interface.}
 
+\item{X}{Matrix, data.frame, or character vector of column names in
+  \code{data}. When a character vector is provided, the columns are extracted
+  from \code{data}. Use this with \code{Y} and \code{D} as an alternative to
+  the formula interface.
+
+  Example: \code{X = c("age", "gender", "income")} or
+  \code{X = microcredit_covariates}.}
+
+\item{D}{Numeric vector of treatment indicators (0/1), or a string with the
+column name in \code{data}. Must contain only 0s and 1s.}
+
 \item{prop_score}{Numeric vector of propensity scores (probability of treatment
-given covariates). Must be strictly between 0 and 1 (exclusive). If \code{NULL}
+given covariates), a single string naming a column in \code{data}, or a
+scalar constant. Must be strictly between 0 and 1 (exclusive). If \code{NULL}
 (default), assumes constant propensity equal to the sample treatment proportion
 (appropriate for randomized experiments).}
 
@@ -253,8 +258,37 @@ The function supports two interfaces:
 \itemize{
   \item \strong{Formula interface}: Specify \code{formula}, \code{treatment}, and \code{data}
   \item \strong{Matrix interface}: Specify \code{Y}, \code{X}, and \code{D} directly
+    (as vectors/matrices, or as column names to be looked up in \code{data})
 }
 }
+\section{Cross-Fitting Procedure}{
+
+The estimation proceeds as follows:
+\enumerate{
+  \item The data is randomly split into \eqn{K} folds. This random splitting
+    is repeated \eqn{M} times (each time with a fresh random partition).
+  \item For each repetition \eqn{m = 1, \ldots, M} and each fold
+    \eqn{k = 1, \ldots, K}:
+    \itemize{
+      \item Each ML algorithm in \code{algorithms} is trained on the
+        \eqn{K - 1} folds that exclude fold \eqn{k}, using the chosen
+        \code{metalearner} strategy.
+      \item Out-of-sample ITE predictions are generated for all observations
+        in fold \eqn{k}.
+    }
+  \item The per-algorithm ITE predictions are combined into a single ensemble
+    prediction using the \code{ensemble_strategy} (cross-validated BLP or
+    simple average).
+  \item This produces one complete vector of out-of-sample ITE predictions per
+    repetition (each observation appears in exactly one test fold per repetition).
+}
+The resulting \eqn{M} vectors of ITE predictions are stored and used by the
+downstream analysis functions (\code{\link{blp}}, \code{\link{gates}},
+\code{\link{clan}}, \code{\link{gavs}}), which compute their estimands
+separately for each repetition and then average the estimates and standard
+errors across the \eqn{M} repetitions.
+}
+
 \section{Metalearners}{
 
 The function supports four metalearner strategies for estimating individual
@@ -327,6 +361,16 @@ dat_full <- microcredit[, c("hhinc_yrly_end", "treat", microcredit_covariates)]
 fit_full <- ensemble_hte(
   hhinc_yrly_end ~ ., treatment = treat, data = dat_full,
   prop_score = microcredit$prop_score,
+  algorithms = c("lm", "grf"), M = 5, K = 5
+)
+
+# Column-name interface (equivalent, no need to subset data)
+fit_names <- ensemble_hte(
+  Y = "hhinc_yrly_end",
+  X = microcredit_covariates,
+  D = "treat",
+  data = microcredit,
+  prop_score = "prop_score",
   algorithms = c("lm", "grf"), M = 5, K = 5
 )
 

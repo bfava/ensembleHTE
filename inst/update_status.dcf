@@ -1,3 +1,7 @@
+Version: 0.1.1
+Status: recommended
+Message: New covariates interface and improved error messages.
+
 Version: 0.1.0
 Status: current
 Message: Initial release.

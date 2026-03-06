@@ -339,9 +339,21 @@
 #' ranking by predicted values within subgroups (e.g., income quintiles,
 #' education levels) yields different targeting results than global ranking.
 #' 
-#' The key statistical challenge is computing correct standard errors for the
-#' difference between the two strategies, since they use the same data. This
-#' is handled by computing the cross-covariance between regression estimates.
+#' @section Estimation Procedure:
+#' For each repetition \eqn{m = 1, \ldots, M}, two GAVS regressions are run
+#' on the same data using the same ensemble predictions from repetition \eqn{m}:
+#' \enumerate{
+#'   \item \strong{Unrestricted}: groups are formed by ranking predictions
+#'     within each fold (as in \code{\link{gavs}}).
+#'   \item \strong{Restricted}: groups are formed by ranking predictions within
+#'     each fold \strong{and} within each level of the \code{restrict_by}
+#'     variable.
+#' }
+#' The difference between unrestricted and restricted estimates is computed for
+#' each repetition, with standard errors accounting for the cross-covariance
+#' between the two regressions (since they share the same data). The final
+#' reported estimates and standard errors are the simple averages across all
+#' \eqn{M} repetitions.
 #' 
 #' @references
 #' Fava, B. (2025). Training and Testing with Multiple Splits: A Central Limit
@@ -765,27 +777,30 @@ print.gavs_restricted_results <- function(x, ...) {
   cat("Unrestricted GAVS Estimates:\n")
   cat(paste0(rep("-", 40), collapse = ""), "\n")
   print_df <- as.data.frame(x$unrestricted$estimates[, .(group, estimate, se, t_value, p_value)])
-  print_df$estimate <- sprintf("%.4f", print_df$estimate)
-  print_df$se <- sprintf("%.4f", print_df$se)
+  print_df$estimate <- sprintf("%.2f", print_df$estimate)
+  print_df$se <- sprintf("%.2f", print_df$se)
   print_df$t_value <- sprintf("%.2f", print_df$t_value)
-  print_df$p_value <- sprintf("%.4f", as.numeric(print_df$p_value))
+  print_df$p_value <- sprintf("%.3f", as.numeric(print_df$p_value))
   print_df$sig <- sapply(as.numeric(x$unrestricted$estimates$p_value), get_stars)
   names(print_df) <- c("Group", "Estimate", "SE", "t", "p-value", "")
   print(print_df, row.names = FALSE, right = FALSE)
   
   cat("\n")
-  cat(paste0("Top-Bottom: ", sprintf("%.4f", x$unrestricted$top_bottom$estimate),
-             " (SE: ", sprintf("%.4f", x$unrestricted$top_bottom$se), ", ",
-             "p = ", sprintf("%.4f", x$unrestricted$top_bottom$p_value), ")\n"))
+  cat(paste0("Top-Bottom: ", sprintf("%.2f", x$unrestricted$top_bottom$estimate),
+             " (SE: ", sprintf("%.2f", x$unrestricted$top_bottom$se), ", ",
+             "p = ", sprintf("%.3f", x$unrestricted$top_bottom$p_value), ") ",
+             get_stars(x$unrestricted$top_bottom$p_value), "\n"))
   if (!is.null(x$unrestricted$all)) {
-    cat(paste0("All: ", sprintf("%.4f", x$unrestricted$all$estimate),
-               " (SE: ", sprintf("%.4f", x$unrestricted$all$se), ", ",
-               "p = ", sprintf("%.4f", x$unrestricted$all$p_value), ")\n"))
+    cat(paste0("All: ", sprintf("%.2f", x$unrestricted$all$estimate),
+               " (SE: ", sprintf("%.2f", x$unrestricted$all$se), ", ",
+               "p = ", sprintf("%.3f", x$unrestricted$all$p_value), ") ",
+               get_stars(x$unrestricted$all$p_value), "\n"))
   }
   if (!is.null(x$unrestricted$top_all)) {
-    cat(paste0("Top-All: ", sprintf("%.4f", x$unrestricted$top_all$estimate),
-               " (SE: ", sprintf("%.4f", x$unrestricted$top_all$se), ", ",
-               "p = ", sprintf("%.4f", x$unrestricted$top_all$p_value), ")\n"))
+    cat(paste0("Top-All: ", sprintf("%.2f", x$unrestricted$top_all$estimate),
+               " (SE: ", sprintf("%.2f", x$unrestricted$top_all$se), ", ",
+               "p = ", sprintf("%.3f", x$unrestricted$top_all$p_value), ") ",
+               get_stars(x$unrestricted$top_all$p_value), "\n"))
   }
   cat("\n")
   
@@ -793,27 +808,30 @@ print.gavs_restricted_results <- function(x, ...) {
   cat("Restricted GAVS Estimates:\n")
   cat(paste0(rep("-", 40), collapse = ""), "\n")
   print_df <- as.data.frame(x$restricted$estimates[, .(group, estimate, se, t_value, p_value)])
-  print_df$estimate <- sprintf("%.4f", print_df$estimate)
-  print_df$se <- sprintf("%.4f", print_df$se)
+  print_df$estimate <- sprintf("%.2f", print_df$estimate)
+  print_df$se <- sprintf("%.2f", print_df$se)
   print_df$t_value <- sprintf("%.2f", print_df$t_value)
-  print_df$p_value <- sprintf("%.4f", as.numeric(print_df$p_value))
+  print_df$p_value <- sprintf("%.3f", as.numeric(print_df$p_value))
   print_df$sig <- sapply(as.numeric(x$restricted$estimates$p_value), get_stars)
   names(print_df) <- c("Group", "Estimate", "SE", "t", "p-value", "")
   print(print_df, row.names = FALSE, right = FALSE)
   
   cat("\n")
-  cat(paste0("Top-Bottom: ", sprintf("%.4f", x$restricted$top_bottom$estimate),
-             " (SE: ", sprintf("%.4f", x$restricted$top_bottom$se), ", ",
-             "p = ", sprintf("%.4f", x$restricted$top_bottom$p_value), ")\n"))
+  cat(paste0("Top-Bottom: ", sprintf("%.2f", x$restricted$top_bottom$estimate),
+             " (SE: ", sprintf("%.2f", x$restricted$top_bottom$se), ", ",
+             "p = ", sprintf("%.3f", x$restricted$top_bottom$p_value), ") ",
+             get_stars(x$restricted$top_bottom$p_value), "\n"))
   if (!is.null(x$restricted$all)) {
-    cat(paste0("All: ", sprintf("%.4f", x$restricted$all$estimate),
-               " (SE: ", sprintf("%.4f", x$restricted$all$se), ", ",
-               "p = ", sprintf("%.4f", x$restricted$all$p_value), ")\n"))
+    cat(paste0("All: ", sprintf("%.2f", x$restricted$all$estimate),
+               " (SE: ", sprintf("%.2f", x$restricted$all$se), ", ",
+               "p = ", sprintf("%.3f", x$restricted$all$p_value), ") ",
+               get_stars(x$restricted$all$p_value), "\n"))
   }
   if (!is.null(x$restricted$top_all)) {
-    cat(paste0("Top-All: ", sprintf("%.4f", x$restricted$top_all$estimate),
-               " (SE: ", sprintf("%.4f", x$restricted$top_all$se), ", ",
-               "p = ", sprintf("%.4f", x$restricted$top_all$p_value), ")\n"))
+    cat(paste0("Top-All: ", sprintf("%.2f", x$restricted$top_all$estimate),
+               " (SE: ", sprintf("%.2f", x$restricted$top_all$se), ", ",
+               "p = ", sprintf("%.3f", x$restricted$top_all$p_value), ") ",
+               get_stars(x$restricted$top_all$p_value), "\n"))
   }
   cat("\n")
   
@@ -821,31 +839,33 @@ print.gavs_restricted_results <- function(x, ...) {
   cat("Difference (Unrestricted - Restricted):\n")
   cat(paste0(rep("-", 40), collapse = ""), "\n")
   print_df <- as.data.frame(x$difference[, .(group, estimate, se, t_value, p_value)])
-  print_df$estimate <- sprintf("%.4f", print_df$estimate)
-  print_df$se <- sprintf("%.4f", print_df$se)
+  print_df$estimate <- sprintf("%.2f", print_df$estimate)
+  print_df$se <- sprintf("%.2f", print_df$se)
   print_df$t_value <- sprintf("%.2f", print_df$t_value)
-  print_df$p_value <- sprintf("%.4f", as.numeric(print_df$p_value))
+  print_df$p_value <- sprintf("%.3f", as.numeric(print_df$p_value))
   print_df$sig <- sapply(as.numeric(x$difference$p_value), get_stars)
   names(print_df) <- c("Group", "Estimate", "SE", "t", "p-value", "")
   print(print_df, row.names = FALSE, right = FALSE)
   
   cat("\n")
-  cat(paste0("Top-Bottom Diff: ", sprintf("%.4f", x$top_bottom_diff$estimate),
-             " (SE: ", sprintf("%.4f", x$top_bottom_diff$se), ", ",
-             "p = ", sprintf("%.4f", x$top_bottom_diff$p_value), ")\n"))
+  cat(paste0("Top-Bottom Diff: ", sprintf("%.2f", x$top_bottom_diff$estimate),
+             " (SE: ", sprintf("%.2f", x$top_bottom_diff$se), ", ",
+             "p = ", sprintf("%.3f", x$top_bottom_diff$p_value), ") ",
+             get_stars(x$top_bottom_diff$p_value), "\n"))
   if (!is.null(x$all_diff)) {
-    cat(paste0("All Diff: ", sprintf("%.4f", x$all_diff$estimate),
-               " (SE: ", sprintf("%.4f", x$all_diff$se), ", ",
-               "p = ", sprintf("%.4f", x$all_diff$p_value), ")\n"))
+    cat(paste0("All Diff: ", sprintf("%.2f", x$all_diff$estimate),
+               " (SE: ", sprintf("%.2f", x$all_diff$se), ", ",
+               "p = ", sprintf("%.3f", x$all_diff$p_value), ") ",
+               get_stars(x$all_diff$p_value), "\n"))
   }
   if (!is.null(x$top_all_diff)) {
-    cat(paste0("Top-All Diff: ", sprintf("%.4f", x$top_all_diff$estimate),
-               " (SE: ", sprintf("%.4f", x$top_all_diff$se), ", ",
-               "p = ", sprintf("%.4f", x$top_all_diff$p_value), ")\n"))
+    cat(paste0("Top-All Diff: ", sprintf("%.2f", x$top_all_diff$estimate),
+               " (SE: ", sprintf("%.2f", x$top_all_diff$se), ", ",
+               "p = ", sprintf("%.3f", x$top_all_diff$p_value), ") ",
+               get_stars(x$top_all_diff$p_value), "\n"))
   }
   
-  cat("\n")
-  cat("Signif. codes: '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1\n")
+  cat("\n---\nSignif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n")
   
   invisible(x)
 }
@@ -948,9 +968,21 @@ plot.gavs_restricted_results <- function(x, alpha = 0.05, ...) {
 #' ranking by predicted treatment effects within subgroups (e.g., income quintiles,
 #' education levels) yields different treatment effect estimates than global ranking.
 #' 
-#' The key statistical challenge is computing correct standard errors for the
-#' difference between the two strategies, since they use the same data. This
-#' is handled by computing the cross-covariance between regression estimates.
+#' @section Estimation Procedure:
+#' For each repetition \eqn{m = 1, \ldots, M}, two GATES regressions are run
+#' on the same data using the same ensemble predictions from repetition \eqn{m}:
+#' \enumerate{
+#'   \item \strong{Unrestricted}: groups are formed by ranking predictions
+#'     within each fold (as in \code{\link{gates}}).
+#'   \item \strong{Restricted}: groups are formed by ranking predictions within
+#'     each fold \strong{and} within each level of the \code{restrict_by}
+#'     variable.
+#' }
+#' The difference between unrestricted and restricted estimates is computed for
+#' each repetition, with standard errors accounting for the cross-covariance
+#' between the two regressions (since they share the same data). The final
+#' reported estimates and standard errors are the simple averages across all
+#' \eqn{M} repetitions.
 #' 
 #' @references
 #' Fava, B. (2025). Training and Testing with Multiple Splits: A Central Limit
@@ -981,6 +1013,7 @@ plot.gavs_restricted_results <- function(x, alpha = 0.05, ...) {
 #' @param prop_score For \code{ensemble_pred_fit} only. Propensity score:
 #'   \itemize{
 #'     \item NULL (default): estimated as mean of treatment variable
+#'     \item Character string: column name in the \code{data} used in the ensemble function
 #'     \item Numeric value: constant propensity score for all observations
 #'     \item Numeric vector: observation-specific propensity scores
 #'   }
@@ -1139,6 +1172,15 @@ gates_restricted <- function(ensemble_fit, restrict_by, n_groups = 3, outcome = 
     unique_D <- unique(D[!is.na(D)])
     if (!all(unique_D %in% c(0, 1))) {
       stop("treatment must be binary (0/1)")
+    }
+    
+    # Resolve prop_score column name (if a single string referencing data)
+    if (!is.null(prop_score) && is.character(prop_score) && length(prop_score) == 1) {
+      if (prop_score %in% names(ensemble_fit$data)) {
+        prop_score <- ensemble_fit$data[[prop_score]]
+      } else {
+        stop("Column '", prop_score, "' (passed as prop_score) not found in the data")
+      }
     }
     
     # Process propensity score
@@ -1469,7 +1511,7 @@ print.gates_restricted_results <- function(x, ...) {
   
   # Basic info
   cat("Strategy comparison:\n")
-  cat("  - Unrestricted: Rank predictions across full sample within folds\n")
+  cat("  - Unrestricted: Rank predictions across full sample\n")
   cat(paste0("  - Restricted: Rank predictions within groups ('", x$strata_var, "')\n"))
   cat(paste0("  - Restrict_by levels: ", paste(x$strata_levels, collapse = ", "), "\n\n"))
   
@@ -1489,27 +1531,30 @@ print.gates_restricted_results <- function(x, ...) {
   cat("Unrestricted GATES Estimates:\n")
   cat(paste0(rep("-", 40), collapse = ""), "\n")
   print_df <- as.data.frame(x$unrestricted$estimates[, .(group, estimate, se, t_value, p_value)])
-  print_df$estimate <- sprintf("%.4f", print_df$estimate)
-  print_df$se <- sprintf("%.4f", print_df$se)
+  print_df$estimate <- sprintf("%.2f", print_df$estimate)
+  print_df$se <- sprintf("%.2f", print_df$se)
   print_df$t_value <- sprintf("%.2f", print_df$t_value)
-  print_df$p_value <- sprintf("%.4f", as.numeric(print_df$p_value))
+  print_df$p_value <- sprintf("%.3f", as.numeric(print_df$p_value))
   print_df$sig <- sapply(as.numeric(x$unrestricted$estimates$p_value), get_stars)
   names(print_df) <- c("Group", "Estimate", "SE", "t", "p-value", "")
   print(print_df, row.names = FALSE, right = FALSE)
   
   cat("\n")
-  cat(paste0("Top-Bottom: ", sprintf("%.4f", x$unrestricted$top_bottom$estimate),
-             " (SE: ", sprintf("%.4f", x$unrestricted$top_bottom$se), ", ",
-             "p = ", sprintf("%.4f", x$unrestricted$top_bottom$p_value), ")\n"))
+  cat(paste0("Top-Bottom: ", sprintf("%.2f", x$unrestricted$top_bottom$estimate),
+             " (SE: ", sprintf("%.2f", x$unrestricted$top_bottom$se), ", ",
+             "p = ", sprintf("%.3f", x$unrestricted$top_bottom$p_value), ") ",
+             get_stars(x$unrestricted$top_bottom$p_value), "\n"))
   if (!is.null(x$unrestricted$all)) {
-    cat(paste0("All: ", sprintf("%.4f", x$unrestricted$all$estimate),
-               " (SE: ", sprintf("%.4f", x$unrestricted$all$se), ", ",
-               "p = ", sprintf("%.4f", x$unrestricted$all$p_value), ")\n"))
+    cat(paste0("All: ", sprintf("%.2f", x$unrestricted$all$estimate),
+               " (SE: ", sprintf("%.2f", x$unrestricted$all$se), ", ",
+               "p = ", sprintf("%.3f", x$unrestricted$all$p_value), ") ",
+               get_stars(x$unrestricted$all$p_value), "\n"))
   }
   if (!is.null(x$unrestricted$top_all)) {
-    cat(paste0("Top-All: ", sprintf("%.4f", x$unrestricted$top_all$estimate),
-               " (SE: ", sprintf("%.4f", x$unrestricted$top_all$se), ", ",
-               "p = ", sprintf("%.4f", x$unrestricted$top_all$p_value), ")\n"))
+    cat(paste0("Top-All: ", sprintf("%.2f", x$unrestricted$top_all$estimate),
+               " (SE: ", sprintf("%.2f", x$unrestricted$top_all$se), ", ",
+               "p = ", sprintf("%.3f", x$unrestricted$top_all$p_value), ") ",
+               get_stars(x$unrestricted$top_all$p_value), "\n"))
   }
   cat("\n")
   
@@ -1517,27 +1562,30 @@ print.gates_restricted_results <- function(x, ...) {
   cat("Restricted GATES Estimates:\n")
   cat(paste0(rep("-", 40), collapse = ""), "\n")
   print_df <- as.data.frame(x$restricted$estimates[, .(group, estimate, se, t_value, p_value)])
-  print_df$estimate <- sprintf("%.4f", print_df$estimate)
-  print_df$se <- sprintf("%.4f", print_df$se)
+  print_df$estimate <- sprintf("%.2f", print_df$estimate)
+  print_df$se <- sprintf("%.2f", print_df$se)
   print_df$t_value <- sprintf("%.2f", print_df$t_value)
-  print_df$p_value <- sprintf("%.4f", as.numeric(print_df$p_value))
+  print_df$p_value <- sprintf("%.3f", as.numeric(print_df$p_value))
   print_df$sig <- sapply(as.numeric(x$restricted$estimates$p_value), get_stars)
   names(print_df) <- c("Group", "Estimate", "SE", "t", "p-value", "")
   print(print_df, row.names = FALSE, right = FALSE)
   
   cat("\n")
-  cat(paste0("Top-Bottom: ", sprintf("%.4f", x$restricted$top_bottom$estimate),
-             " (SE: ", sprintf("%.4f", x$restricted$top_bottom$se), ", ",
-             "p = ", sprintf("%.4f", x$restricted$top_bottom$p_value), ")\n"))
+  cat(paste0("Top-Bottom: ", sprintf("%.2f", x$restricted$top_bottom$estimate),
+             " (SE: ", sprintf("%.2f", x$restricted$top_bottom$se), ", ",
+             "p = ", sprintf("%.3f", x$restricted$top_bottom$p_value), ") ",
+             get_stars(x$restricted$top_bottom$p_value), "\n"))
   if (!is.null(x$restricted$all)) {
-    cat(paste0("All: ", sprintf("%.4f", x$restricted$all$estimate),
-               " (SE: ", sprintf("%.4f", x$restricted$all$se), ", ",
-               "p = ", sprintf("%.4f", x$restricted$all$p_value), ")\n"))
+    cat(paste0("All: ", sprintf("%.2f", x$restricted$all$estimate),
+               " (SE: ", sprintf("%.2f", x$restricted$all$se), ", ",
+               "p = ", sprintf("%.3f", x$restricted$all$p_value), ") ",
+               get_stars(x$restricted$all$p_value), "\n"))
   }
   if (!is.null(x$restricted$top_all)) {
-    cat(paste0("Top-All: ", sprintf("%.4f", x$restricted$top_all$estimate),
-               " (SE: ", sprintf("%.4f", x$restricted$top_all$se), ", ",
-               "p = ", sprintf("%.4f", x$restricted$top_all$p_value), ")\n"))
+    cat(paste0("Top-All: ", sprintf("%.2f", x$restricted$top_all$estimate),
+               " (SE: ", sprintf("%.2f", x$restricted$top_all$se), ", ",
+               "p = ", sprintf("%.3f", x$restricted$top_all$p_value), ") ",
+               get_stars(x$restricted$top_all$p_value), "\n"))
   }
   cat("\n")
   
@@ -1545,31 +1593,33 @@ print.gates_restricted_results <- function(x, ...) {
   cat("Difference (Unrestricted - Restricted):\n")
   cat(paste0(rep("-", 40), collapse = ""), "\n")
   print_df <- as.data.frame(x$difference[, .(group, estimate, se, t_value, p_value)])
-  print_df$estimate <- sprintf("%.4f", print_df$estimate)
-  print_df$se <- sprintf("%.4f", print_df$se)
+  print_df$estimate <- sprintf("%.2f", print_df$estimate)
+  print_df$se <- sprintf("%.2f", print_df$se)
   print_df$t_value <- sprintf("%.2f", print_df$t_value)
-  print_df$p_value <- sprintf("%.4f", as.numeric(print_df$p_value))
+  print_df$p_value <- sprintf("%.3f", as.numeric(print_df$p_value))
   print_df$sig <- sapply(as.numeric(x$difference$p_value), get_stars)
   names(print_df) <- c("Group", "Estimate", "SE", "t", "p-value", "")
   print(print_df, row.names = FALSE, right = FALSE)
   
   cat("\n")
-  cat(paste0("Top-Bottom Diff: ", sprintf("%.4f", x$top_bottom_diff$estimate),
-             " (SE: ", sprintf("%.4f", x$top_bottom_diff$se), ", ",
-             "p = ", sprintf("%.4f", x$top_bottom_diff$p_value), ")\n"))
+  cat(paste0("Top-Bottom Diff: ", sprintf("%.2f", x$top_bottom_diff$estimate),
+             " (SE: ", sprintf("%.2f", x$top_bottom_diff$se), ", ",
+             "p = ", sprintf("%.3f", x$top_bottom_diff$p_value), ") ",
+             get_stars(x$top_bottom_diff$p_value), "\n"))
   if (!is.null(x$all_diff)) {
-    cat(paste0("All Diff: ", sprintf("%.4f", x$all_diff$estimate),
-               " (SE: ", sprintf("%.4f", x$all_diff$se), ", ",
-               "p = ", sprintf("%.4f", x$all_diff$p_value), ")\n"))
+    cat(paste0("All Diff: ", sprintf("%.2f", x$all_diff$estimate),
+               " (SE: ", sprintf("%.2f", x$all_diff$se), ", ",
+               "p = ", sprintf("%.3f", x$all_diff$p_value), ") ",
+               get_stars(x$all_diff$p_value), "\n"))
   }
   if (!is.null(x$top_all_diff)) {
-    cat(paste0("Top-All Diff: ", sprintf("%.4f", x$top_all_diff$estimate),
-               " (SE: ", sprintf("%.4f", x$top_all_diff$se), ", ",
-               "p = ", sprintf("%.4f", x$top_all_diff$p_value), ")\n"))
+    cat(paste0("Top-All Diff: ", sprintf("%.2f", x$top_all_diff$estimate),
+               " (SE: ", sprintf("%.2f", x$top_all_diff$se), ", ",
+               "p = ", sprintf("%.3f", x$top_all_diff$p_value), ") ",
+               get_stars(x$top_all_diff$p_value), "\n"))
   }
   
-  cat("\n")
-  cat("Signif. codes: '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1\n")
+  cat("\n---\nSignif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n")
   
   invisible(x)
 }

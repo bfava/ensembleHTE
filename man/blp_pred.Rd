@@ -44,22 +44,41 @@ An object of class `blp_pred_results` containing:
 }
 \description{
 Computes the Best Linear Predictor (BLP) of the outcome using the ensemble
-predictions (from `ensemble_pred`) or ITE predictions (from `ensemble_hte`).
+predictions (from \code{ensemble_pred}) or ITE predictions (from \code{ensemble_hte}).
 This is a simple regression of Y on the predicted values.
 
 This function implements the multiple-split estimation strategy developed in
 Fava (2025), which combines predictions from multiple machine learning algorithms
 into an ensemble and averages BLP estimates across M repetitions of K-fold
 cross-fitting to improve statistical power.
+}
+\section{Estimation Procedure}{
 
-The method uses ordinary least squares regression of Y on predicted values.
-A coefficient (beta) close to 1 indicates good calibration; significantly
-different from 1 suggests over- or under-prediction.
+For each repetition \eqn{m = 1, \ldots, M}:
+\enumerate{
+  \item The ensemble predictions from repetition \eqn{m} are used as the
+    regressor. These predictions were generated via cross-fitting in
+    \code{ensemble_pred()} or \code{ensemble_hte()}, so each observation's
+    prediction is out-of-sample.
+  \item A single ordinary least squares regression is run:
+    \deqn{Y_i = \\alpha + \\beta \\, \\hat{Y}_i + \\varepsilon_i}
+    where \eqn{\\hat{Y}_i} is the predicted value. HC1 robust standard
+    errors are computed (or cluster-robust SEs when \code{individual_id} was
+    specified in the ensemble fit).
+}
+The final reported estimates and standard errors are the simple averages of
+the per-repetition estimates and standard errors across all \eqn{M}
+repetitions.
 
-When using `ensemble_hte_fit` objects, this allows testing whether predicted
+\strong{Interpretation:}
+A coefficient (\eqn{\\beta}) close to 1 indicates good calibration;
+significantly different from 1 suggests over- or under-prediction.
+
+When using \code{ensemble_hte_fit} objects, this allows testing whether predicted
 treatment effects correlate with a different outcome variable (e.g., an endline
 measure that may only be observed for a subset of the data).
 }
+
 \examples{
 \donttest{
 data(microcredit)

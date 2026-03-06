@@ -30,16 +30,19 @@ ensemble_pred(
 \code{Y ~ X1 + X2} or \code{Y ~ .}). Use \code{~ . - Z} to exclude variables.
 Required if \code{Y} and \code{X} are not provided.}
 
-\item{data}{A data.frame or data.table containing the variables in the formula.
-Required if using formula interface; ignored if \code{Y} and \code{X}
-are provided.}
+\item{data}{A data.frame or data.table containing the variables. Required for
+the formula interface or when \code{Y}/\code{X} are passed as column name(s).}
 
-\item{Y}{Numeric vector of outcomes. Use this with \code{X} as an
-alternative to the formula interface. Can contain NA values for observations
-where \code{train_idx = FALSE}.}
+\item{Y}{Numeric vector of outcomes, or a single string naming a column in
+\code{data}. Use this with \code{X} as an alternative to the formula
+interface. Can contain NA values for observations where
+\code{train_idx = FALSE}.}
 
-\item{X}{Matrix or data.frame of covariates. Use this with \code{Y}
-as an alternative to the formula interface.}
+\item{X}{Matrix, data.frame, or character vector of column names in
+\code{data}. Use this with \code{Y} as an alternative to the formula
+interface. When a character vector is supplied (e.g.,
+\code{X = c("age", "income")} or \code{X = microcredit_covariates}),
+the corresponding columns are extracted from \code{data}.}
 
 \item{train_idx}{Optional logical or integer vector indicating which observations
 to use for training. If \code{NULL} (default), all observations are used.
@@ -203,7 +206,39 @@ The function supports two interfaces:
   \item \strong{Formula interface}: Specify \code{formula} and \code{data}
   \item \strong{Matrix interface}: Specify \code{Y} and \code{X} directly
 }
+
+In the matrix interface, \code{Y} and \code{X} can be provided as column
+name(s) instead of raw data. When \code{Y} is a single string and/or \code{X}
+is a character vector, the corresponding columns are extracted from \code{data}.
 }
+\section{Cross-Fitting Procedure}{
+
+The estimation proceeds as follows:
+\enumerate{
+  \item The data is randomly split into \eqn{K} folds. This random splitting
+    is repeated \eqn{M} times (each time with a fresh random partition).
+  \item For each repetition \eqn{m = 1, \ldots, M} and each fold
+    \eqn{k = 1, \ldots, K}:
+    \itemize{
+      \item Each ML algorithm in \code{algorithms} is trained on the
+        \eqn{K - 1} folds that exclude fold \eqn{k}.
+      \item Out-of-sample predictions of Y are generated for all observations
+        in fold \eqn{k}.
+    }
+  \item The per-algorithm predictions are combined into a single ensemble
+    prediction using the \code{ensemble_strategy} (cross-validated OLS or
+    simple average).
+  \item This produces one complete vector of out-of-sample predictions per
+    repetition (each observation appears in exactly one test fold per
+    repetition).
+}
+The resulting \eqn{M} prediction vectors are stored and used by downstream
+analysis functions (\code{\link{blp_pred}}, \code{\link{gavs}},
+\code{\link{gates}}, \code{\link{clan}}), which compute their estimands
+separately for each repetition and then average the estimates and standard
+errors across the \eqn{M} repetitions.
+}
+
 \section{Training on a Subset}{
 
 The \code{train_idx} parameter allows training models on a subset of observations
@@ -284,6 +319,15 @@ fit <- ensemble_pred(
 dat_full <- microcredit[, c("bank_profits_pp", microcredit_covariates)]
 fit_full <- ensemble_pred(
   bank_profits_pp ~ ., data = dat_full,
+  train_idx = microcredit$loan_size > 0 & microcredit$treat == 1,
+  algorithms = c("lm", "grf"), M = 5, K = 5
+)
+
+# Column-name interface (equivalent, no need to subset data)
+fit_cov <- ensemble_pred(
+  Y = "bank_profits_pp",
+  X = microcredit_covariates,
+  data = microcredit,
   train_idx = microcredit$loan_size > 0 & microcredit$treat == 1,
   algorithms = c("lm", "grf"), M = 5, K = 5
 )

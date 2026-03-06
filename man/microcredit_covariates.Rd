@@ -20,6 +20,11 @@ A character vector of length 24 containing column names from the
   \code{"hhasset_yrly_base"}.
 }
 \source{
+Karlan, D. and Zinman, J. (2011). Microcredit in Theory and Practice: Using
+Randomized Credit Scoring for Impact Evaluation. \emph{Science},
+\strong{332}(6035), 1278--1284.
+\doi{10.1126/science.1200138}
+
 Athey, S., Fava, B., Karlan, D., Osman, A. and Zinman, J. (2025). Profits
 and Social Impacts: Complements vs. Tradeoffs for Lenders in Three
 Countries. Working paper.

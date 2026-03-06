@@ -17,6 +17,36 @@
 #'   \item \strong{Matrix interface}: Specify \code{Y} and \code{X} directly
 #' }
 #'
+#' In the matrix interface, \code{Y} and \code{X} can be provided as column
+#' name(s) instead of raw data. When \code{Y} is a single string and/or \code{X}
+#' is a character vector, the corresponding columns are extracted from \code{data}.
+#'
+#' @section Cross-Fitting Procedure:
+#' The estimation proceeds as follows:
+#' \enumerate{
+#'   \item The data is randomly split into \eqn{K} folds. This random splitting
+#'     is repeated \eqn{M} times (each time with a fresh random partition).
+#'   \item For each repetition \eqn{m = 1, \ldots, M} and each fold
+#'     \eqn{k = 1, \ldots, K}:
+#'     \itemize{
+#'       \item Each ML algorithm in \code{algorithms} is trained on the
+#'         \eqn{K - 1} folds that exclude fold \eqn{k}.
+#'       \item Out-of-sample predictions of Y are generated for all observations
+#'         in fold \eqn{k}.
+#'     }
+#'   \item The per-algorithm predictions are combined into a single ensemble
+#'     prediction using the \code{ensemble_strategy} (cross-validated OLS or
+#'     simple average).
+#'   \item This produces one complete vector of out-of-sample predictions per
+#'     repetition (each observation appears in exactly one test fold per
+#'     repetition).
+#' }
+#' The resulting \eqn{M} prediction vectors are stored and used by downstream
+#' analysis functions (\code{\link{blp_pred}}, \code{\link{gavs}},
+#' \code{\link{gates}}, \code{\link{clan}}), which compute their estimands
+#' separately for each repetition and then average the estimates and standard
+#' errors across the \eqn{M} repetitions.
+#'
 #' @section Training on a Subset:
 #' The \code{train_idx} parameter allows training models on a subset of observations
 #' while generating predictions for all observations. This is useful when the outcome
@@ -52,14 +82,17 @@
 #' @param formula A formula specifying the outcome and covariates (e.g.,
 #'   \code{Y ~ X1 + X2} or \code{Y ~ .}). Use \code{~ . - Z} to exclude variables.
 #'   Required if \code{Y} and \code{X} are not provided.
-#' @param data A data.frame or data.table containing the variables in the formula.
-#'   Required if using formula interface; ignored if \code{Y} and \code{X}
-#'   are provided.
-#' @param Y Numeric vector of outcomes. Use this with \code{X} as an
-#'   alternative to the formula interface. Can contain NA values for observations
-#'   where \code{train_idx = FALSE}.
-#' @param X Matrix or data.frame of covariates. Use this with \code{Y}
-#'   as an alternative to the formula interface.
+#' @param data A data.frame or data.table containing the variables. Required for
+#'   the formula interface or when \code{Y}/\code{X} are passed as column name(s).
+#' @param Y Numeric vector of outcomes, or a single string naming a column in
+#'   \code{data}. Use this with \code{X} as an alternative to the formula
+#'   interface. Can contain NA values for observations where
+#'   \code{train_idx = FALSE}.
+#' @param X Matrix, data.frame, or character vector of column names in
+#'   \code{data}. Use this with \code{Y} as an alternative to the formula
+#'   interface. When a character vector is supplied (e.g.,
+#'   \code{X = c("age", "income")} or \code{X = microcredit_covariates}),
+#'   the corresponding columns are extracted from \code{data}.
 #' @param train_idx Optional logical or integer vector indicating which observations
 #'   to use for training. If \code{NULL} (default), all observations are used.
 #'   If provided:
@@ -245,6 +278,15 @@
 #'   algorithms = c("lm", "grf"), M = 5, K = 5
 #' )
 #'
+#' # Column-name interface (equivalent, no need to subset data)
+#' fit_cov <- ensemble_pred(
+#'   Y = "bank_profits_pp",
+#'   X = microcredit_covariates,
+#'   data = microcredit,
+#'   train_idx = microcredit$loan_size > 0 & microcredit$treat == 1,
+#'   algorithms = c("lm", "grf"), M = 5, K = 5
+#' )
+#'
 #' # With parallel processing (4 cores)
 #' fit <- ensemble_pred(
 #'   bank_profits_pp ~ ., data = dat,
@@ -319,6 +361,38 @@ ensemble_pred <- function(formula = NULL, data = NULL,
   # Validate common inputs
   algorithms <- validate_common_inputs(M, K, algorithms, ensemble_folds, n_cores)
   
+  # --- Resolve column-name shortcuts for Y and X ---
+  # Y: single string -> outcome column name
+  # X: character vector -> column names for covariates
+  Y_is_name <- is.character(Y) && length(Y) == 1 && !is.null(data)
+  X_is_names <- is.character(X) && !is.null(data)
+
+  if (Y_is_name || X_is_names) {
+    if (is.null(data)) {
+      stop("'data' must be provided when Y or X are column name(s).")
+    }
+    if (!is.data.frame(data) && !is.data.table(data)) {
+      stop("'data' must be a data.frame or data.table.")
+    }
+
+    if (Y_is_name) {
+      outcome_var <- Y
+      if (!outcome_var %in% names(data)) {
+        stop("Column '", outcome_var, "' not found in 'data'.")
+      }
+      Y <- data[[outcome_var]]
+    }
+    if (X_is_names) {
+      covariate_vars <- X
+      missing_cols <- setdiff(covariate_vars, names(data))
+      if (length(missing_cols) > 0) {
+        stop("The following columns are not in 'data': ",
+             paste(missing_cols, collapse = ", "))
+      }
+      X <- data[, covariate_vars, drop = FALSE]
+    }
+  }
+
   # Determine which interface is being used
   use_matrix_interface <- !is.null(Y) && !is.null(X)
   use_formula_interface <- !is.null(formula) && !is.null(data)
@@ -331,7 +405,7 @@ ensemble_pred <- function(formula = NULL, data = NULL,
   }
   
   if (use_matrix_interface) {
-    # Matrix interface: Y, X provided directly
+    # Matrix interface: Y, X provided directly (or resolved from column names)
     
     # Validate inputs
     if (is.factor(Y)) {
@@ -355,20 +429,27 @@ ensemble_pred <- function(formula = NULL, data = NULL,
     }
     
     # Convert X to data.table
-    X <- as.data.table(X)
+    if (!is.data.table(X)) {
+      X <- as.data.table(X)
+    }
     
     # Generate default column names if needed (fallback for data.frames)
     if (is.null(names(X)) || any(names(X) == "")) {
       names(X) <- paste0("X", seq_len(ncol(X)))
     }
     
-    # Create combined data for storage
-    data <- cbind(data.table(Y = Y), X)
+    # Set variable names if not already set (from column-name resolution)
+    if (!exists("outcome_var", inherits = FALSE)) outcome_var <- "Y"
+    if (!exists("covariate_vars", inherits = FALSE)) covariate_vars <- names(X)
+    
+    # Create combined data for storage (if not already provided)
+    if (is.null(data)) {
+      data <- cbind(data.table(Y = Y), X)
+    }
     
     # Create a formula for consistency
-    formula <- as.formula(paste("Y ~", paste(names(X), collapse = " + ")))
-    outcome_var <- "Y"
-    covariate_vars <- names(X)
+    formula <- as.formula(paste(outcome_var, "~",
+                                paste(covariate_vars, collapse = " + ")))
     
   } else if (use_formula_interface) {
     # Formula interface
@@ -378,9 +459,10 @@ ensemble_pred <- function(formula = NULL, data = NULL,
       data <- as.data.table(data)
     }
     
+    # Determine outcome variable
     outcome_var <- all.vars(formula)[1]
     
-    # Handle formula processing
+    # Determine covariates from formula RHS
     if (length(formula) == 3) {
       # Has RHS (e.g., Y ~ X1 + X2 or Y ~ . or Y ~ . - Z)
       rhs <- formula[[3]]
@@ -407,6 +489,10 @@ ensemble_pred <- function(formula = NULL, data = NULL,
       stop("Formula must include covariates (e.g., Y ~ . or Y ~ X1 + X2)")
     }
     
+    # Rebuild formula to reflect actual covariates used
+    formula <- as.formula(paste(outcome_var, "~",
+                                paste(covariate_vars, collapse = " + ")))
+    
     # Extract data
     Y <- data[[outcome_var]]
     X <- data[, ..covariate_vars]
@@ -423,6 +509,17 @@ ensemble_pred <- function(formula = NULL, data = NULL,
     }
     
   } else {
+    # Check if the user tried the matrix interface but some args are NULL
+    # (e.g., Y = df$nonexistent silently returns NULL)
+    null_args <- c(
+      if ("Y" %in% names(cl) && is.null(Y)) "Y",
+      if ("X" %in% names(cl) && is.null(X)) "X"
+    )
+    if (length(null_args) > 0) {
+      stop(paste0(paste(null_args, collapse = ", "),
+                  if (length(null_args) == 1) " is NULL. " else " are NULL. ",
+                  "Did you pass a non-existent column name (e.g., df$wrong_name)?"))
+    }
     stop("Must provide either (formula, data) or (Y, X)")
   }
   
@@ -813,7 +910,6 @@ print.ensemble_pred_fit <- function(x, ...) {
 #'   \item n: Total number of observations
 #'   \item n_train: Number of training observations
 #'   \item M: Number of repetitions
-#'   \item prediction_summary: Summary statistics for predictions
 #'   \item metrics: Prediction accuracy metrics (R-squared, RMSE, MAE, correlation)
 #'   \item blp: BLP calibration test results
 #'   \item gavs: GAVS group average results
@@ -836,7 +932,6 @@ print.ensemble_pred_fit <- function(x, ...) {
 #'
 #' @export
 summary.ensemble_pred_fit <- function(object, n_groups = 3, ...) {
-  pred_mean <- rowMeans(object$predictions)
   
   # Get outcome name
   outcome_name <- if (!is.null(object$formula)) all.vars(object$formula)[1] else "Y"
@@ -853,18 +948,9 @@ summary.ensemble_pred_fit <- function(object, n_groups = 3, ...) {
   cat("Outcome:     ", outcome_name, "\n", sep = "")
   cat("Observations: ", object$n, "\n", sep = "")
   if (subset_training) {
-    cat("Training obs: ", object$n_train, " (accuracy computed on these)\n", sep = "")
+    cat("Training obs: ", object$n_train, "\n", sep = "")
   }
   cat("Repetitions:  ", object$M, "\n", sep = "")
-  
-  cat("\nPrediction Summary (averaged across ", object$M, " repetitions):\n", sep = "")
-  cat("  All observations:\n")
-  print(summary(pred_mean))
-  
-  if (subset_training) {
-    cat("  Training observations only:\n")
-    print(summary(pred_mean[train_idx]))
-  }
   
   # Compute prediction accuracy metrics per repetition, then average
   # Only use training observations for accuracy computation
@@ -886,22 +972,23 @@ summary.ensemble_pred_fit <- function(object, n_groups = 3, ...) {
   # Average across repetitions
   metrics_df <- do.call(rbind, metrics_by_rep)
   
-  metric_note <- if (subset_training) " (training obs only)" else ""
-  cat("\nPrediction Accuracy", metric_note, " (averaged across ", object$M, " repetitions):\n", sep = "")
-  cat("  R-squared:         ", round(mean(metrics_df$r_squared), 4), "\n", sep = "")
-  cat("  RMSE:              ", round(mean(metrics_df$rmse), 4), "\n", sep = "")
-  cat("  MAE:               ", round(mean(metrics_df$mae), 4), "\n", sep = "")
-  cat("  Correlation:       ", round(mean(metrics_df$correlation), 4), "\n", sep = "")
+  cat("\nPrediction Accuracy (averaged across ", object$M, " repetitions):\n", sep = "")
+  cat("  R-squared:         ", round(mean(metrics_df$r_squared), 2), "\n", sep = "")
+  cat("  RMSE:              ", round(mean(metrics_df$rmse), 2), "\n", sep = "")
+  cat("  MAE:               ", round(mean(metrics_df$mae), 2), "\n", sep = "")
+  cat("  Correlation:       ", round(mean(metrics_df$correlation), 2), "\n", sep = "")
   
   # BLP Analysis
   blp_result <- blp_pred(object)
   cat("\nBest Linear Predictor (BLP):\n")
-  cat("  intercept:         ", sprintf("%.4f", blp_result$estimates[blp_result$estimates$term == "intercept", "estimate"]),
-      " (SE: ", sprintf("%.4f", blp_result$estimates[blp_result$estimates$term == "intercept", "se"]), 
-      ", p: ", sprintf("%.4f", blp_result$estimates[blp_result$estimates$term == "intercept", "p_value"]), ")\n", sep = "")
-  cat("  slope:             ", sprintf("%.4f", blp_result$estimates[blp_result$estimates$term == "beta", "estimate"]),
-      " (SE: ", sprintf("%.4f", blp_result$estimates[blp_result$estimates$term == "beta", "se"]),
-      ", p: ", sprintf("%.4f", blp_result$estimates[blp_result$estimates$term == "beta", "p_value"]), ")\n", sep = "")
+  cat("  intercept:         ", sprintf("%.2f", blp_result$estimates[blp_result$estimates$term == "intercept", "estimate"]),
+      " (SE: ", sprintf("%.2f", blp_result$estimates[blp_result$estimates$term == "intercept", "se"]), 
+      ", p: ", sprintf("%.3f", blp_result$estimates[blp_result$estimates$term == "intercept", "p_value"]), ") ",
+      get_stars(blp_result$estimates[blp_result$estimates$term == "intercept", "p_value"]), "\n", sep = "")
+  cat("  slope:             ", sprintf("%.2f", blp_result$estimates[blp_result$estimates$term == "beta", "estimate"]),
+      " (SE: ", sprintf("%.2f", blp_result$estimates[blp_result$estimates$term == "beta", "se"]),
+      ", p: ", sprintf("%.3f", blp_result$estimates[blp_result$estimates$term == "beta", "p_value"]), ") ",
+      get_stars(blp_result$estimates[blp_result$estimates$term == "beta", "p_value"]), "\n", sep = "")
   
   # Interpretation
   cat("  -> Intercept close to 0 and slope close to 1 indicate good calibration\n")
@@ -914,7 +1001,7 @@ summary.ensemble_pred_fit <- function(object, n_groups = 3, ...) {
   cat("  ", paste(rep("-", 44), collapse = ""), "\n", sep = "")
   for (i in 1:nrow(gavs_result$estimates)) {
     stars <- get_stars(gavs_result$estimates$p_value[i])
-    cat(sprintf("  %5d  %10.4f  %10.4f  %10.4f %s\n",
+    cat(sprintf("  %5d  %10.2f  %10.2f  %10.3f %s\n",
                 gavs_result$estimates$group[i],
                 gavs_result$estimates$estimate[i],
                 gavs_result$estimates$se[i],
@@ -925,9 +1012,9 @@ summary.ensemble_pred_fit <- function(object, n_groups = 3, ...) {
   # Top-bottom test
   tb <- gavs_result$top_bottom
   tb_stars <- get_stars(tb$p_value)
-  cat("\n  Top - Bottom:  ", sprintf("%.4f", tb$estimate),
-      " (SE: ", sprintf("%.4f", tb$se),
-      ", p: ", sprintf("%.4f", tb$p_value), ") ", tb_stars, "\n", sep = "")
+  cat("\n  Top - Bottom:  ", sprintf("%.2f", tb$estimate),
+      " (SE: ", sprintf("%.2f", tb$se),
+      ", p: ", sprintf("%.3f", tb$p_value), ") ", tb_stars, "\n", sep = "")
   
   cat("\n---\nSignif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n")
   
@@ -939,7 +1026,6 @@ summary.ensemble_pred_fit <- function(object, n_groups = 3, ...) {
       n = object$n,
       n_train = if (subset_training) object$n_train else object$n,
       M = object$M,
-      prediction_summary = summary(pred_mean),
       metrics = colMeans(metrics_df),
       blp = blp_result,
       gavs = gavs_result

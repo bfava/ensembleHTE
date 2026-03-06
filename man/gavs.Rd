@@ -98,11 +98,35 @@ This function implements the multiple-split estimation strategy developed in
 Fava (2025), which combines predictions from multiple machine learning algorithms
 into an ensemble and averages GAVS estimates across M repetitions of K-fold
 cross-fitting to improve statistical power.
-
-The method uses ordinary least squares regression of Y on group indicators.
-Groups are formed by ranking predicted values within each fold.
-Robust (HC1) standard errors are computed.
 }
+\section{Estimation Procedure}{
+
+For each repetition \eqn{m = 1, \ldots, M}:
+\enumerate{
+  \item Observations are assigned to \code{n_groups} quantile-based groups by
+    ranking the ensemble predictions from repetition \eqn{m} \emph{within each
+    fold}. Group 1 contains the lowest predicted values and group
+    \code{n_groups} the highest. Forming groups within folds ensures that
+    group assignment is independent of the model used to generate predictions
+    for that observation (since predictions are out-of-sample within each fold).
+  \item A single ordinary least squares regression is run on all observations:
+    \deqn{Y_i = \sum_{g=1}^{G} \mu_g \, \mathbf{1}\{i \in g\} + \varepsilon_i}
+    This is a regression of Y on group dummies (no intercept), so each
+    \eqn{\mu_g} directly estimates the average outcome in group \eqn{g}.
+  \item HC1 heteroskedasticity-robust standard errors are computed
+    (or cluster-robust SEs when \code{individual_id} was specified).
+}
+The final reported estimates and standard errors are the simple averages of
+the per-repetition estimates and standard errors across all \eqn{M} repetitions.
+
+Three summary tests are reported:
+\itemize{
+  \item \strong{Top-Bottom}: difference between top and bottom group averages.
+  \item \strong{All}: weighted average of all groups (estimates the overall mean).
+  \item \strong{Top-All}: difference between the top group and the overall mean.
+}
+}
+
 \section{Subsample Usage}{
 
 The \code{subset} parameter controls which observations are used for evaluation.

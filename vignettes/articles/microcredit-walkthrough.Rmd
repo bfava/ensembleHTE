@@ -3,7 +3,7 @@ title: "Introduction to ensembleHTE: Detecting Heterogeneity and Exploring Targe
 author: "Bruno Fava"
 date: "`r Sys.Date()`"
 output:
-  html_document:
+  rmarkdown::html_vignette:
     toc: true
     toc_depth: 3
 ---
@@ -14,23 +14,12 @@ knitr::opts_chunk$set(
   comment = "#>",
   fig.width = 7,
   fig.height = 5,
-  message = TRUE,
+  message = FALSE,
   warning = FALSE
 )
 # Pre-computed fit objects are stored in vignettes/precomputed/.
 # Run data-raw/precompute_walkthrough.R to regenerate them.
 PRECOMPUTED <- file.exists("../precomputed/fit_hte_walkthrough.rds")
-```
-
-```{css, echo = FALSE}
-/* Widen the text column when previewing with html_vignette */
-.container-fluid.main-container {
-  max-width: 960px;
-}
-body {
-  max-width: 960px;
-  margin: 0 auto;
-}
 ```
 
 ## Introduction

@@ -79,8 +79,8 @@ utils::globalVariables(c(
     cli_bullets(c(
       "i" = "This package is under active development.",
       "i" = "Run {.run ensembleHTE::ensemble_news()} to check for updates.",
-      "i" = "Please cite: Fava (2025). Run {.run citation('ensembleHTE')} for details.",
-      "i" = "Report bugs or send suggestions at {.url https://github.com/bfava/ensembleHTE/issues}"
+      "i" = "Please cite: Fava (2025). Run {.run citation(\"ensembleHTE\")} for details.",
+      "i" = "Report bugs or send suggestions at {.url https://github.com/bfava/ensembleHTE/issues} or {.email brunovnfava@gmail.com}"
     ))
   })
 

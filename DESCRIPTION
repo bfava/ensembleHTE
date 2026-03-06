@@ -44,5 +44,5 @@ Suggests:
     gbm,
     ranger
 VignetteBuilder: knitr
-URL: https://bfava.com/ensembleHTE/, https://github.com/bfava/ensembleHTE
+URL: https://bfava.github.io/ensembleHTE/, https://github.com/bfava/ensembleHTE
 BugReports: https://github.com/bfava/ensembleHTE/issues

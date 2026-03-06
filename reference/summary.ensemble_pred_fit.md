@@ -18,7 +18,7 @@ summary(object, n_groups = 3, ...)
 - object:
 
   An object of class `ensemble_pred_fit` from
-  [`ensemble_pred`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md).
+  [`ensemble_pred`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md).
 
 - n_groups:
 

@@ -14,7 +14,7 @@ print(x, ...)
 - x:
 
   An object of class `gavs_results` from
-  [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md)
+  [`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md)
 
 - ...:
 

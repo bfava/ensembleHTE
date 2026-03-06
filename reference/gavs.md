@@ -29,9 +29,9 @@ gavs(
 - ensemble_fit:
 
   An object of class `ensemble_hte_fit` from
-  [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
+  [`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
   or `ensemble_pred_fit` from
-  [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md).
+  [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md).
 
 - n_groups:
 
@@ -180,7 +180,7 @@ The `subset` parameter controls which observations are used for
 evaluation. This is useful when:
 
 - The ML model was trained on a subset (e.g., using `train_idx` in
-  [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md))
+  [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md))
   and you want to evaluate on the same or different subset.
 
 - You want to evaluate treatment effect targeting on an outcome that is

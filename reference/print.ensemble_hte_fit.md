@@ -15,7 +15,7 @@ print(x, ...)
 - x:
 
   An object of class `ensemble_hte_fit` from
-  [`ensemble_hte`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md).
+  [`ensemble_hte`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md).
 
 - ...:
 

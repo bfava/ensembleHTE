@@ -6,7 +6,7 @@ observations indicated by `ref_mask`. Observations outside the reference
 subset are assigned to groups based on where their values fall relative
 to the reference cutoffs. When `ref_mask` is `NULL` or all `TRUE`, this
 is equivalent to
-[`create_groups`](https://bfava.com/ensembleHTE/reference/create_groups.md).
+[`create_groups`](https://bfava.github.io/ensembleHTE/reference/create_groups.md).
 
 This is used when the grouping population differs from the analysis
 population (e.g., groups defined by the ML training sample, then applied

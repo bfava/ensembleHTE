@@ -12,18 +12,18 @@ arise from having to pick a single best algorithm.
 
 Two main entry points:
 
-- **[`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)**
+- **[`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)**
   — estimate heterogeneous *treatment* effects.
-- **[`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)**
+- **[`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md)**
   — predict an outcome (no treatment structure needed).
 
 A suite of analysis
-functions—[`blp()`](https://bfava.com/ensembleHTE/reference/blp.md),
-[`gates()`](https://bfava.com/ensembleHTE/reference/gates.md),
-[`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md),
-[`clan()`](https://bfava.com/ensembleHTE/reference/clan.md), and their
-restricted counterparts—lets you test for heterogeneity, characterize
-who is in each group, and compare targeting strategies.
+functions—[`blp()`](https://bfava.github.io/ensembleHTE/reference/blp.md),
+[`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md),
+[`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md),
+[`clan()`](https://bfava.github.io/ensembleHTE/reference/clan.md), and
+their restricted counterparts—lets you test for heterogeneity,
+characterize who is in each group, and compare targeting strategies.
 
 For the statistical foundations, see [Fava
 (2025)](https://bfava.com/files/Bruno_Fava_JMP.pdf).
@@ -95,28 +95,28 @@ plot(gavs_results)
 
 ### Estimation
 
-- [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md):
+- [`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md):
   Fit ensemble heterogeneous treatment effect model
-- [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md):
+- [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md):
   Fit ensemble prediction model (without treatment effects)
 
 ### Analysis
 
-- [`blp()`](https://bfava.com/ensembleHTE/reference/blp.md) /
-  [`blp_pred()`](https://bfava.com/ensembleHTE/reference/blp_pred.md):
+- [`blp()`](https://bfava.github.io/ensembleHTE/reference/blp.md) /
+  [`blp_pred()`](https://bfava.github.io/ensembleHTE/reference/blp_pred.md):
   Best Linear Predictor (test for heterogeneity / calibration)
-- [`gates()`](https://bfava.com/ensembleHTE/reference/gates.md): Group
-  Average Treatment Effects
-- [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md): Group
-  Averages for prediction tasks
-- [`clan()`](https://bfava.com/ensembleHTE/reference/clan.md):
+- [`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md):
+  Group Average Treatment Effects
+- [`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md):
+  Group Averages for prediction tasks
+- [`clan()`](https://bfava.github.io/ensembleHTE/reference/clan.md):
   Classification Analysis — characterize high/low effect groups
 
 ### Restricted comparisons
 
-- [`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md):
+- [`gates_restricted()`](https://bfava.github.io/ensembleHTE/reference/gates_restricted.md):
   Compare GATES under unrestricted vs. equity-constrained targeting
-- [`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md):
+- [`gavs_restricted()`](https://bfava.github.io/ensembleHTE/reference/gavs_restricted.md):
   Compare GAVS under unrestricted vs. equity-constrained targeting
 
 ## Getting Help
@@ -145,69 +145,69 @@ Apache License 2.0 — see LICENSE file for details
 
 ## All functions
 
-- [`blp()`](https://bfava.com/ensembleHTE/reference/blp.md) : Compute
-  BLP (Best Linear Predictor) of CATE
-- [`blp_pred()`](https://bfava.com/ensembleHTE/reference/blp_pred.md) :
-  Compute BLP (Best Linear Predictor) for Prediction
-- [`clan()`](https://bfava.com/ensembleHTE/reference/clan.md) : Compute
-  CLAN (Classification Analysis)
-- [`combine_ensembles()`](https://bfava.com/ensembleHTE/reference/combine_ensembles.md)
+- [`blp()`](https://bfava.github.io/ensembleHTE/reference/blp.md) :
+  Compute BLP (Best Linear Predictor) of CATE
+- [`blp_pred()`](https://bfava.github.io/ensembleHTE/reference/blp_pred.md)
+  : Compute BLP (Best Linear Predictor) for Prediction
+- [`clan()`](https://bfava.github.io/ensembleHTE/reference/clan.md) :
+  Compute CLAN (Classification Analysis)
+- [`combine_ensembles()`](https://bfava.github.io/ensembleHTE/reference/combine_ensembles.md)
   : Combine Multiple Ensemble Objects
-- [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
+- [`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
   : Fit Ensemble Heterogeneous Treatment Effects Model
-- [`ensemble_news()`](https://bfava.com/ensembleHTE/reference/ensemble_news.md)
+- [`ensemble_news()`](https://bfava.github.io/ensembleHTE/reference/ensemble_news.md)
   : Check for ensembleHTE Updates
-- [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)
+- [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md)
   : Fit Ensemble Prediction Model
-- [`gates()`](https://bfava.com/ensembleHTE/reference/gates.md) :
+- [`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md) :
   Compute GATES (Group Average Treatment Effects)
-- [`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md)
+- [`gates_restricted()`](https://bfava.github.io/ensembleHTE/reference/gates_restricted.md)
   : Compare GATES: Unrestricted vs Restricted Ranking
-- [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md) : Compute
-  GAVS (Group Averages)
-- [`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md)
+- [`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md) :
+  Compute GAVS (Group Averages)
+- [`gavs_restricted()`](https://bfava.github.io/ensembleHTE/reference/gavs_restricted.md)
   : Compare GAVS: Unrestricted vs Restricted Ranking
-- [`ite()`](https://bfava.com/ensembleHTE/reference/ite.md) : Extract
-  ITE Predictions as a Matrix
-- [`microcredit`](https://bfava.com/ensembleHTE/reference/microcredit.md)
+- [`ite()`](https://bfava.github.io/ensembleHTE/reference/ite.md) :
+  Extract ITE Predictions as a Matrix
+- [`microcredit`](https://bfava.github.io/ensembleHTE/reference/microcredit.md)
   : Microcredit Experiment in the Philippines
-- [`microcredit_covariates`](https://bfava.com/ensembleHTE/reference/microcredit_covariates.md)
+- [`microcredit_covariates`](https://bfava.github.io/ensembleHTE/reference/microcredit_covariates.md)
   : Control Covariates for the Microcredit Dataset
-- [`plot(`*`<blp_pred_results>`*`)`](https://bfava.com/ensembleHTE/reference/plot.blp_pred_results.md)
+- [`plot(`*`<blp_pred_results>`*`)`](https://bfava.github.io/ensembleHTE/reference/plot.blp_pred_results.md)
   : Plot method for blp_pred_results objects
-- [`plot(`*`<blp_results>`*`)`](https://bfava.com/ensembleHTE/reference/plot.blp_results.md)
+- [`plot(`*`<blp_results>`*`)`](https://bfava.github.io/ensembleHTE/reference/plot.blp_results.md)
   : Plot method for blp_results objects
-- [`plot(`*`<clan_results>`*`)`](https://bfava.com/ensembleHTE/reference/plot.clan_results.md)
+- [`plot(`*`<clan_results>`*`)`](https://bfava.github.io/ensembleHTE/reference/plot.clan_results.md)
   : Plot method for clan_results objects
-- [`plot(`*`<gates_restricted_results>`*`)`](https://bfava.com/ensembleHTE/reference/plot.gates_restricted_results.md)
+- [`plot(`*`<gates_restricted_results>`*`)`](https://bfava.github.io/ensembleHTE/reference/plot.gates_restricted_results.md)
   : Plot method for gates_restricted_results objects
-- [`plot(`*`<gates_results>`*`)`](https://bfava.com/ensembleHTE/reference/plot.gates_results.md)
+- [`plot(`*`<gates_results>`*`)`](https://bfava.github.io/ensembleHTE/reference/plot.gates_results.md)
   : Plot method for gates_results objects
-- [`plot(`*`<gavs_restricted_results>`*`)`](https://bfava.com/ensembleHTE/reference/plot.gavs_restricted_results.md)
+- [`plot(`*`<gavs_restricted_results>`*`)`](https://bfava.github.io/ensembleHTE/reference/plot.gavs_restricted_results.md)
   : Plot method for gavs_restricted_results objects
-- [`plot(`*`<gavs_results>`*`)`](https://bfava.com/ensembleHTE/reference/plot.gavs_results.md)
+- [`plot(`*`<gavs_results>`*`)`](https://bfava.github.io/ensembleHTE/reference/plot.gavs_results.md)
   : Plot method for gavs_results objects
-- [`print(`*`<blp_pred_results>`*`)`](https://bfava.com/ensembleHTE/reference/print.blp_pred_results.md)
+- [`print(`*`<blp_pred_results>`*`)`](https://bfava.github.io/ensembleHTE/reference/print.blp_pred_results.md)
   : Print method for blp_pred_results objects
-- [`print(`*`<blp_results>`*`)`](https://bfava.com/ensembleHTE/reference/print.blp_results.md)
+- [`print(`*`<blp_results>`*`)`](https://bfava.github.io/ensembleHTE/reference/print.blp_results.md)
   : Print method for blp_results objects
-- [`print(`*`<clan_results>`*`)`](https://bfava.com/ensembleHTE/reference/print.clan_results.md)
+- [`print(`*`<clan_results>`*`)`](https://bfava.github.io/ensembleHTE/reference/print.clan_results.md)
   : Print method for clan_results objects
-- [`print(`*`<ensemble_hte_fit>`*`)`](https://bfava.com/ensembleHTE/reference/print.ensemble_hte_fit.md)
+- [`print(`*`<ensemble_hte_fit>`*`)`](https://bfava.github.io/ensembleHTE/reference/print.ensemble_hte_fit.md)
   : Print Method for ensemble_hte_fit Objects
-- [`print(`*`<ensemble_pred_fit>`*`)`](https://bfava.com/ensembleHTE/reference/print.ensemble_pred_fit.md)
+- [`print(`*`<ensemble_pred_fit>`*`)`](https://bfava.github.io/ensembleHTE/reference/print.ensemble_pred_fit.md)
   : Print Method for ensemble_pred_fit Objects
-- [`print(`*`<gates_restricted_results>`*`)`](https://bfava.com/ensembleHTE/reference/print.gates_restricted_results.md)
+- [`print(`*`<gates_restricted_results>`*`)`](https://bfava.github.io/ensembleHTE/reference/print.gates_restricted_results.md)
   : Print method for gates_restricted_results objects
-- [`print(`*`<gates_results>`*`)`](https://bfava.com/ensembleHTE/reference/print.gates_results.md)
+- [`print(`*`<gates_results>`*`)`](https://bfava.github.io/ensembleHTE/reference/print.gates_results.md)
   : Print method for gates_results objects
-- [`print(`*`<gavs_restricted_results>`*`)`](https://bfava.com/ensembleHTE/reference/print.gavs_restricted_results.md)
+- [`print(`*`<gavs_restricted_results>`*`)`](https://bfava.github.io/ensembleHTE/reference/print.gavs_restricted_results.md)
   : Print method for gavs_restricted_results objects
-- [`print(`*`<gavs_results>`*`)`](https://bfava.com/ensembleHTE/reference/print.gavs_results.md)
+- [`print(`*`<gavs_results>`*`)`](https://bfava.github.io/ensembleHTE/reference/print.gavs_results.md)
   : Print method for gavs_results objects
-- [`summary(`*`<ensemble_hte_fit>`*`)`](https://bfava.com/ensembleHTE/reference/summary.ensemble_hte_fit.md)
+- [`summary(`*`<ensemble_hte_fit>`*`)`](https://bfava.github.io/ensembleHTE/reference/summary.ensemble_hte_fit.md)
   : Summary Method for ensemble_hte_fit Objects
-- [`summary(`*`<ensemble_pred_fit>`*`)`](https://bfava.com/ensembleHTE/reference/summary.ensemble_pred_fit.md)
+- [`summary(`*`<ensemble_pred_fit>`*`)`](https://bfava.github.io/ensembleHTE/reference/summary.ensemble_pred_fit.md)
   : Summary Method for ensemble_pred_fit Objects
 
 # Articles
@@ -216,8 +216,8 @@ Apache License 2.0 — see LICENSE file for details
 
 - [Introduction to ensembleHTE: Detecting Heterogeneity and Exploring
   Targeting
-  Tradeoffs](https://bfava.com/ensembleHTE/articles/microcredit-walkthrough.md):
+  Tradeoffs](https://bfava.github.io/ensembleHTE/articles/microcredit-walkthrough.md):
 - [Complete Guide to
-  ensembleHTE](https://bfava.com/ensembleHTE/articles/ensembleHTE-complete-guide.md):
+  ensembleHTE](https://bfava.github.io/ensembleHTE/articles/ensembleHTE-complete-guide.md):
 - [Quick Guide to
-  ensembleHTE](https://bfava.com/ensembleHTE/articles/getting-started.md):
+  ensembleHTE](https://bfava.github.io/ensembleHTE/articles/getting-started.md):

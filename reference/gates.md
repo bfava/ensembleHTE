@@ -35,9 +35,9 @@ gates(
 - ensemble_fit:
 
   An object of class `ensemble_hte_fit` from
-  [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
+  [`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
   or `ensemble_pred_fit` from
-  [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md).
+  [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md).
 
 - n_groups:
 
@@ -63,7 +63,7 @@ gates(
   For `ensemble_pred_fit` only. The treatment variable:
 
   - Character string: column name in the `data` used in
-    [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)
+    [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md)
 
   - Numeric vector: binary treatment variable (must have same length as
     data)

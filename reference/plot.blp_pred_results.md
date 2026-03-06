@@ -18,7 +18,7 @@ plot(x, alpha = 0.05, ...)
 - x:
 
   An object of class `blp_pred_results` from
-  [`blp_pred()`](https://bfava.com/ensembleHTE/reference/blp_pred.md)
+  [`blp_pred()`](https://bfava.github.io/ensembleHTE/reference/blp_pred.md)
 
 - alpha:
 

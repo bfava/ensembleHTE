@@ -120,7 +120,7 @@ experiment in the Philippines where microloans were randomly offered to
 applicants. For a gentler, application-oriented introduction to the
 package using this same dataset, see the companion article [Introduction
 to
-ensembleHTE](https://bfava.com/ensembleHTE/articles/microcredit-walkthrough.md).
+ensembleHTE](https://bfava.github.io/ensembleHTE/articles/microcredit-walkthrough.md).
 That article walks through a practical analysis step by step, while the
 present guide provides comprehensive coverage of every feature and
 option available in the package.
@@ -168,7 +168,7 @@ Key variables:
 ### Fitting an Ensemble HTE Model
 
 The main function for HTE estimation is
-[`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md):
+[`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md):
 
 ``` r
 # Fit ensemble HTE model
@@ -270,9 +270,9 @@ comprehensive overview including:
 
 ### Extracting Individual Treatment Effect Predictions
 
-The [`ite()`](https://bfava.com/ensembleHTE/reference/ite.md) function
-extracts the matrix of individualized treatment effect predictions from
-a fitted HTE model:
+The [`ite()`](https://bfava.github.io/ensembleHTE/reference/ite.md)
+function extracts the matrix of individualized treatment effect
+predictions from a fitted HTE model:
 
 ``` r
 # Extract ITE matrix: n observations x M repetitions
@@ -291,7 +291,7 @@ column and then average the results across repetitions.
 
 ### Group Average Treatment Effects (GATES)
 
-The [`gates()`](https://bfava.com/ensembleHTE/reference/gates.md)
+The [`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md)
 function computes average treatment effects for groups defined by
 predicted ITE quantiles:
 
@@ -370,8 +370,9 @@ groups 1 and 3), this provides visual evidence of heterogeneity.
 
 ### Best Linear Predictor (BLP)
 
-The [`blp()`](https://bfava.com/ensembleHTE/reference/blp.md) function
-tests whether the ML predictions capture meaningful heterogeneity:
+The [`blp()`](https://bfava.github.io/ensembleHTE/reference/blp.md)
+function tests whether the ML predictions capture meaningful
+heterogeneity:
 
 ``` r
 # Compute BLP
@@ -435,9 +436,9 @@ BLP coefficient estimates
 
 ### Classification Analysis (CLAN)
 
-The [`clan()`](https://bfava.com/ensembleHTE/reference/clan.md) function
-characterizes which types of individuals are in the top vs. bottom
-groups:
+The [`clan()`](https://bfava.github.io/ensembleHTE/reference/clan.md)
+function characterizes which types of individuals are in the top
+vs. bottom groups:
 
 ``` r
 # Compute CLAN for all covariates
@@ -498,11 +499,11 @@ most from treatment have higher X1 on average?”
 #### Using Analysis Functions with Subsets
 
 All analysis functions
-([`gates()`](https://bfava.com/ensembleHTE/reference/gates.md),
-[`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md),
-[`clan()`](https://bfava.com/ensembleHTE/reference/clan.md),
-[`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md),
-[`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md))
+([`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md),
+[`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md),
+[`clan()`](https://bfava.github.io/ensembleHTE/reference/clan.md),
+[`gates_restricted()`](https://bfava.github.io/ensembleHTE/reference/gates_restricted.md),
+[`gavs_restricted()`](https://bfava.github.io/ensembleHTE/reference/gavs_restricted.md))
 accept a `subset` argument that restricts which observations are used
 for the analysis. The `subset` can be a logical vector, an integer index
 vector, or the string `"train"` (to use the training subset from
@@ -561,7 +562,7 @@ different between groups.
 
 The package also supports standard prediction problems without treatment
 effects through
-[`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md).
+[`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md).
 This is useful for:
 
 - Predicting outcomes based on covariates
@@ -650,9 +651,9 @@ summary(fit_pred)
 
 ### Group Averages (GAVS)
 
-The [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md) function
-computes average outcomes for groups defined by prediction quantiles —
-the prediction counterpart of GATES:
+The [`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md)
+function computes average outcomes for groups defined by prediction
+quantiles — the prediction counterpart of GATES:
 
 ``` r
 gavs_results <- gavs(fit_pred, n_groups = 3)
@@ -704,11 +705,12 @@ Group Averages showing predicted vs. observed outcome by group
 
 ### Best Linear Predictor for Predictions (BLP_PRED)
 
-The [`blp_pred()`](https://bfava.com/ensembleHTE/reference/blp_pred.md)
+The
+[`blp_pred()`](https://bfava.github.io/ensembleHTE/reference/blp_pred.md)
 function tests whether ML predictions have genuine out-of-sample
 predictive power. This is distinct from
-[`blp()`](https://bfava.com/ensembleHTE/reference/blp.md), which tests
-for treatment effect heterogeneity.
+[`blp()`](https://bfava.github.io/ensembleHTE/reference/blp.md), which
+tests for treatment effect heterogeneity.
 
 ``` r
 blp_pred_results <- blp_pred(fit_pred)
@@ -764,15 +766,15 @@ BLP_PRED coefficient estimates
 
 This section covers the options available for customizing how the
 ensemble is fitted. These options apply to both
-[`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
+[`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
 and
-[`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)
+[`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md)
 unless stated otherwise.
 
 ### Metalearner Strategies
 
 The `metalearner` parameter in
-[`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
+[`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
 controls the strategy for estimating individual treatment effects. The
 package supports four strategies:
 
@@ -1133,12 +1135,12 @@ algorithms (`scale_covariates = TRUE`). Two details are worth noting:
 - **Scaling is only used for ML training and prediction**: The
   standardized covariates are used internally to train models and
   generate predictions. All downstream analysis functions
-  ([`gates()`](https://bfava.com/ensembleHTE/reference/gates.md),
-  [`blp()`](https://bfava.com/ensembleHTE/reference/blp.md),
-  [`clan()`](https://bfava.com/ensembleHTE/reference/clan.md),
-  [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md), etc.)
-  operate on the **original, unscaled data**. For example, CLAN reports
-  group means in the original units of each variable.
+  ([`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md),
+  [`blp()`](https://bfava.github.io/ensembleHTE/reference/blp.md),
+  [`clan()`](https://bfava.github.io/ensembleHTE/reference/clan.md),
+  [`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md),
+  etc.) operate on the **original, unscaled data**. For example, CLAN
+  reports group means in the original units of each variable.
 
 Factor and character columns are automatically handled: they are
 converted to factors and, for algorithms that require numeric input
@@ -1181,7 +1183,7 @@ fit <- ensemble_hte(
 ### Combining Fits from Multiple Sessions
 
 You can combine fits from separate runs using
-[`combine_ensembles()`](https://bfava.com/ensembleHTE/reference/combine_ensembles.md).
+[`combine_ensembles()`](https://bfava.github.io/ensembleHTE/reference/combine_ensembles.md).
 This is useful in two common scenarios: (1) you ran an initial analysis
 and later want to **add more repetitions** to increase M without
 re-running everything, or (2) you split work across multiple machines or
@@ -1240,9 +1242,9 @@ analysis.
 The key insight is that you can:
 
 1.  **Train predictions on one variable** (using
-    [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
+    [`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
     or
-    [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md))
+    [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md))
 2.  **Form groups** based on those predictions
 3.  **Analyze treatment effects or averages** on a completely different
     outcome
@@ -1464,9 +1466,9 @@ This is useful for:
 ## Training on Subsets
 
 A powerful feature of both
-[`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)
+[`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md)
 and
-[`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
+[`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
 is the `train_idx` parameter, which allows you to **train on a subset of
 observations while generating predictions for everyone**. This is
 essential when an outcome is only observed for some units.
@@ -1615,12 +1617,13 @@ This design is valuable because:
 1.  Identify the outcome that is only observed for a subset (e.g.,
     treated only)
 2.  Use
-    [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)
+    [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md)
     with `train_idx` to train on that subset but predict for all
-3.  Use [`gates()`](https://bfava.com/ensembleHTE/reference/gates.md) or
-    [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md) with the
-    `outcome` parameter to analyze a different variable that IS observed
-    for everyone
+3.  Use
+    [`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md)
+    or [`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md)
+    with the `outcome` parameter to analyze a different variable that IS
+    observed for everyone
 4.  Optionally, use `treatment` parameter to specify the treatment
     variable
 
@@ -1650,7 +1653,7 @@ gavs_results <- gavs(fit_subset, outcome = "hhinc_yrly_end")
 ### HTE with Subset Training (Multi-Arm Trials)
 
 The `train_idx` parameter is also available in
-[`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md),
+[`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md),
 which is useful for **multi-arm trials** or when you want to estimate
 treatment effects on a subset but predict for everyone. For example, in
 a three-arm trial you could estimate treatment effects between two arms
@@ -1813,7 +1816,7 @@ on predicted benefit, or should we target within subgroups (e.g.,
 ensuring each income group receives its “fair share” of treatment)?
 
 The
-[`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md)
+[`gates_restricted()`](https://bfava.github.io/ensembleHTE/reference/gates_restricted.md)
 function formally tests whether these strategies yield different
 outcomes. Using the model fitted above and income quintiles (created in
 the data-loading step):
@@ -1911,7 +1914,7 @@ whether they produce meaningfully different results.
 ### Unrestricted vs. Restricted GAVS
 
 The same comparison framework applies to prediction tasks via
-[`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md):
+[`gavs_restricted()`](https://bfava.github.io/ensembleHTE/reference/gavs_restricted.md):
 
 ``` r
 # Compare prediction strategies by income quintile
@@ -2076,9 +2079,9 @@ When `individual_id` is provided:
   CLAN uses a regression-based approach for cluster-robust SEs when
   clustering is active. Cross-regression covariance calculations (used
   in
-  [`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md)
+  [`gates_restricted()`](https://bfava.github.io/ensembleHTE/reference/gates_restricted.md)
   and
-  [`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md))
+  [`gavs_restricted()`](https://bfava.github.io/ensembleHTE/reference/gavs_restricted.md))
   also account for clustering.
 
 **Important**: The `individual_id` can be specified as a column name
@@ -2142,7 +2145,7 @@ Total computation time scales roughly as `M × K × length(algorithms)`.
 3.  **Tuning**: `tune = TRUE` can increase per-algorithm time
     significantly. Use only for final results.
 4.  **Cluster computing**: Use
-    [`combine_ensembles()`](https://bfava.com/ensembleHTE/reference/combine_ensembles.md)
+    [`combine_ensembles()`](https://bfava.github.io/ensembleHTE/reference/combine_ensembles.md)
     to split work across machines and combine later.
 5.  **Algorithm choice**: `lm` (OLS) is fast, but less powerful. `grf`
     (regression forest) is often faster than `xgboost` (especially with
@@ -2182,23 +2185,26 @@ power.
 Key takeaways:
 
 1.  **Use
-    [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
+    [`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
     for treatment effect heterogeneity** in RCTs
 2.  **Use
-    [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)
+    [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md)
     for prediction problems** without treatment structure
-3.  **Use [`gates()`](https://bfava.com/ensembleHTE/reference/gates.md)
-    and [`blp()`](https://bfava.com/ensembleHTE/reference/blp.md) to
-    test for heterogeneity**; use
-    [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md) and
-    [`blp_pred()`](https://bfava.com/ensembleHTE/reference/blp_pred.md)
+3.  **Use
+    [`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md)
+    and [`blp()`](https://bfava.github.io/ensembleHTE/reference/blp.md)
+    to test for heterogeneity**; use
+    [`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md)
+    and
+    [`blp_pred()`](https://bfava.github.io/ensembleHTE/reference/blp_pred.md)
     for prediction validation
-4.  **Use [`clan()`](https://bfava.com/ensembleHTE/reference/clan.md) to
+4.  **Use
+    [`clan()`](https://bfava.github.io/ensembleHTE/reference/clan.md) to
     characterize high/low benefit groups**
 5.  **Use
-    [`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md)
+    [`gates_restricted()`](https://bfava.github.io/ensembleHTE/reference/gates_restricted.md)
     and
-    [`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md)
+    [`gavs_restricted()`](https://bfava.github.io/ensembleHTE/reference/gavs_restricted.md)
     to evaluate targeting strategies**
 6.  **Use cross-outcome analysis** to study how predictions on one
     variable relate to effects on another
@@ -2236,35 +2242,35 @@ forests. *The Annals of Statistics*, 47(2), 1148-1178.
 
 ### Core Estimation Functions
 
-| Function                                                                              | Purpose                                                |
-|---------------------------------------------------------------------------------------|--------------------------------------------------------|
-| [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)           | Fit ensemble model for heterogeneous treatment effects |
-| [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)         | Fit ensemble model for prediction (no treatment)       |
-| [`combine_ensembles()`](https://bfava.com/ensembleHTE/reference/combine_ensembles.md) | Combine multiple ensemble fits                         |
+| Function                                                                                    | Purpose                                                |
+|---------------------------------------------------------------------------------------------|--------------------------------------------------------|
+| [`ensemble_hte()`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)           | Fit ensemble model for heterogeneous treatment effects |
+| [`ensemble_pred()`](https://bfava.github.io/ensembleHTE/reference/ensemble_pred.md)         | Fit ensemble model for prediction (no treatment)       |
+| [`combine_ensembles()`](https://bfava.github.io/ensembleHTE/reference/combine_ensembles.md) | Combine multiple ensemble fits                         |
 
 ### Analysis Functions (Treatment Effects)
 
-| Function                                                                            | Purpose                                       |
-|-------------------------------------------------------------------------------------|-----------------------------------------------|
-| [`gates()`](https://bfava.com/ensembleHTE/reference/gates.md)                       | Group Average Treatment Effects               |
-| [`blp()`](https://bfava.com/ensembleHTE/reference/blp.md)                           | Best Linear Predictor of CATE                 |
-| [`clan()`](https://bfava.com/ensembleHTE/reference/clan.md)                         | Classification Analysis (characterize groups) |
-| [`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md) | Compare unrestricted vs. restricted targeting |
+| Function                                                                                  | Purpose                                       |
+|-------------------------------------------------------------------------------------------|-----------------------------------------------|
+| [`gates()`](https://bfava.github.io/ensembleHTE/reference/gates.md)                       | Group Average Treatment Effects               |
+| [`blp()`](https://bfava.github.io/ensembleHTE/reference/blp.md)                           | Best Linear Predictor of CATE                 |
+| [`clan()`](https://bfava.github.io/ensembleHTE/reference/clan.md)                         | Classification Analysis (characterize groups) |
+| [`gates_restricted()`](https://bfava.github.io/ensembleHTE/reference/gates_restricted.md) | Compare unrestricted vs. restricted targeting |
 
 ### Analysis Functions (Prediction)
 
-| Function                                                                          | Purpose                                        |
-|-----------------------------------------------------------------------------------|------------------------------------------------|
-| [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md)                       | Group Averages (for predictions)               |
-| [`blp_pred()`](https://bfava.com/ensembleHTE/reference/blp_pred.md)               | Best Linear Predictor (for predictions)        |
-| [`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md) | Compare unrestricted vs. restricted prediction |
+| Function                                                                                | Purpose                                        |
+|-----------------------------------------------------------------------------------------|------------------------------------------------|
+| [`gavs()`](https://bfava.github.io/ensembleHTE/reference/gavs.md)                       | Group Averages (for predictions)               |
+| [`blp_pred()`](https://bfava.github.io/ensembleHTE/reference/blp_pred.md)               | Best Linear Predictor (for predictions)        |
+| [`gavs_restricted()`](https://bfava.github.io/ensembleHTE/reference/gavs_restricted.md) | Compare unrestricted vs. restricted prediction |
 
 ### Utility Functions
 
-| Function                                                                      | Purpose                                                  |
-|-------------------------------------------------------------------------------|----------------------------------------------------------|
-| [`ite()`](https://bfava.com/ensembleHTE/reference/ite.md)                     | Extract ITE prediction matrix from an `ensemble_hte` fit |
-| [`ensemble_news()`](https://bfava.com/ensembleHTE/reference/ensemble_news.md) | Check for package updates and view changelog             |
+| Function                                                                            | Purpose                                                  |
+|-------------------------------------------------------------------------------------|----------------------------------------------------------|
+| [`ite()`](https://bfava.github.io/ensembleHTE/reference/ite.md)                     | Extract ITE prediction matrix from an `ensemble_hte` fit |
+| [`ensemble_news()`](https://bfava.github.io/ensembleHTE/reference/ensemble_news.md) | Check for package updates and view changelog             |
 
 ### Print and Plot Methods
 

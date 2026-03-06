@@ -7,7 +7,7 @@ improves statistical power by averaging predictions across M repetitions
 of K-fold cross-fitting.
 
 Unlike
-[`ensemble_hte`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
+[`ensemble_hte`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
 which estimates heterogeneous treatment effects, this function performs
 standard prediction of Y given X without any treatment variable or
 causal structure.
@@ -358,10 +358,10 @@ The estimation proceeds as follows:
 
 The resulting \\M\\ prediction vectors are stored and used by downstream
 analysis functions
-([`blp_pred`](https://bfava.com/ensembleHTE/reference/blp_pred.md),
-[`gavs`](https://bfava.com/ensembleHTE/reference/gavs.md),
-[`gates`](https://bfava.com/ensembleHTE/reference/gates.md),
-[`clan`](https://bfava.com/ensembleHTE/reference/clan.md)), which
+([`blp_pred`](https://bfava.github.io/ensembleHTE/reference/blp_pred.md),
+[`gavs`](https://bfava.github.io/ensembleHTE/reference/gavs.md),
+[`gates`](https://bfava.github.io/ensembleHTE/reference/gates.md),
+[`clan`](https://bfava.github.io/ensembleHTE/reference/clan.md)), which
 compute their estimands separately for each repetition and then average
 the estimates and standard errors across the \\M\\ repetitions.
 
@@ -413,13 +413,13 @@ arXiv:2511.04957*.
 
 ## See also
 
-[`gavs`](https://bfava.com/ensembleHTE/reference/gavs.md) for Group
-Averages analysis,
-[`blp_pred`](https://bfava.com/ensembleHTE/reference/blp_pred.md) for
-Best Linear Predictor analysis,
-[`clan`](https://bfava.com/ensembleHTE/reference/clan.md) for
+[`gavs`](https://bfava.github.io/ensembleHTE/reference/gavs.md) for
+Group Averages analysis,
+[`blp_pred`](https://bfava.github.io/ensembleHTE/reference/blp_pred.md)
+for Best Linear Predictor analysis,
+[`clan`](https://bfava.github.io/ensembleHTE/reference/clan.md) for
 Classification Analysis,
-[`ensemble_hte`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)
+[`ensemble_hte`](https://bfava.github.io/ensembleHTE/reference/ensemble_hte.md)
 for heterogeneous treatment effect estimation
 
 ## Examples

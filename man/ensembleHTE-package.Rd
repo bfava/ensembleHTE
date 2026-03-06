@@ -43,7 +43,7 @@ Key features:
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://bfava.github.io/ensembleHTE/}
+  \item \url{https://bfava.com/ensembleHTE/}
   \item \url{https://github.com/bfava/ensembleHTE}
   \item Report bugs at \url{https://github.com/bfava/ensembleHTE/issues}
 }

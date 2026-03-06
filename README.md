@@ -2,7 +2,7 @@
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/bfava/ensembleHTE/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/bfava/ensembleHTE/actions/workflows/R-CMD-check.yaml)
-[![pkgdown](https://github.com/bfava/ensembleHTE/actions/workflows/pkgdown.yaml/badge.svg)](https://bfava.github.io/ensembleHTE/)
+[![pkgdown](https://github.com/bfava/ensembleHTE/actions/workflows/pkgdown.yaml/badge.svg)](https://bfava.com/ensembleHTE/)
 <!-- badges: end -->
 
 ## Overview

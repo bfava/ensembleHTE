@@ -487,25 +487,25 @@ summary(fit)
 #> Repetitions:  3
 #> 
 #> Prediction Accuracy (averaged across 3 repetitions):
-#>   R-squared:         0.19
-#>   RMSE:              15.39
-#>   MAE:               11.08
+#>   R-squared:         0.2
+#>   RMSE:              15.33
+#>   MAE:               11.03
 #>   Correlation:       0.44
 #> 
 #> Best Linear Predictor (BLP):
-#>   intercept:         -0.00 (SE: 0.60, p: 0.995) 
-#>   slope:             0.98 (SE: 0.07, p: 0.000) ***
+#>   intercept:         -0.01 (SE: 0.60, p: 0.993) 
+#>   slope:             0.97 (SE: 0.07, p: 0.000) ***
 #>   -> Intercept close to 0 and slope close to 1 indicate good calibration
 #> Note: ML model trained on 650 of 1113 observations; GAVS evaluated on 650 observations. Use subset = "all" to use all observations.
 #> 
 #> Group Averages (GAVS) with 3 groups:
 #>   Group    Estimate   Std.Error    Pr(>|t|)
 #>   --------------------------------------------
-#>       1       -9.24        1.32       0.000 ***
-#>       2       -0.62        0.94       0.511 
-#>       3        7.65        0.99       0.000 ***
+#>       1       -9.05        1.32       0.000 ***
+#>       2       -0.81        0.91       0.370 
+#>       3        7.64        1.03       0.000 ***
 #> 
-#>   Top - Bottom:  16.90 (SE: 1.65, p: 0.000) ***
+#>   Top - Bottom:  16.68 (SE: 1.67, p: 0.000) ***
 #> 
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
@@ -526,8 +526,8 @@ blp_pred(fit)
 #> 
 #>         Term    Estimate   Std.Error   t value    Pr(>|t|)
 #>   ----------------------------------------------------
-#>    intercept       -0.00        0.60     -0.01       0.995 
-#>         beta        0.98        0.07     13.01       0.000 ***
+#>    intercept       -0.01        0.60     -0.01       0.993 
+#>         beta        0.97        0.07     13.46       0.000 ***
 #> 
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
@@ -549,16 +549,16 @@ gavs(fit, n_groups = 3)
 #> 
 #>   Group    Estimate   Std.Error   t value    Pr(>|t|)
 #>   ----------------------------------------------------
-#>       1       -9.24        1.32     -6.99       0.000 ***
-#>       2       -0.62        0.94     -0.66       0.511 
-#>       3        7.65        0.99      7.73       0.000 ***
+#>       1       -9.05        1.32     -6.85       0.000 ***
+#>       2       -0.81        0.91     -0.90       0.370 
+#>       3        7.64        1.03      7.43       0.000 ***
 #> 
 #> Heterogeneity Tests:
 #>   ----------------------------------------------------
 #>           Test    Estimate   Std.Error   t value    Pr(>|t|)
 #>   ----------------------------------------------------
-#>     Top-Bottom       16.90        1.65     10.23       0.000 ***
-#>        Top-All        7.66        0.80      9.57       0.000 ***
+#>     Top-Bottom       16.68        1.67      9.96       0.000 ***
+#>        Top-All        7.64        0.81      9.40       0.000 ***
 #> 
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
@@ -585,16 +585,16 @@ gates(fit, outcome = "hhinc_yrly_end", treatment = "treat",
 #> 
 #>   Group    Estimate   Std.Error   t value    Pr(>|t|)
 #>   ----------------------------------------------------
-#>       1     -418.75     2148.27     -0.19       0.845 
-#>       2      883.33     1568.04      0.56       0.573 
-#>       3     3990.92     4364.06      0.91       0.360 
+#>       1      240.98     2212.75      0.11       0.913 
+#>       2     -142.88     1560.51     -0.09       0.927 
+#>       3     4554.22     4499.98      1.01       0.312 
 #> 
 #> Heterogeneity Tests:
 #>   ----------------------------------------------------
 #>           Test    Estimate   Std.Error   t value    Pr(>|t|)
 #>   ----------------------------------------------------
-#>     Top-Bottom     4409.67     4863.93      0.91       0.365 
-#>        Top-All     2506.92     3041.13      0.82       0.410 
+#>     Top-Bottom     4313.24     5022.80      0.86       0.390 
+#>        Top-All     3003.10     3134.93      0.96       0.338 
 #> 
 #> ---
 #> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1

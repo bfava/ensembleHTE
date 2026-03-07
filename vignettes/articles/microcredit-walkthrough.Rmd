@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 PRECOMPUTED <- file.exists("../precomputed/fit_hte_walkthrough.rds")
 ```
 
-## Introduction
+# Introduction
 
 The `ensembleHTE` package provides a practical approach to heterogeneous
 treatment effect (HTE) analysis and prediction that (i) uses the entire
@@ -69,7 +69,7 @@ illustrate the package's main features through three exercises:
 > `combine_ensembles()` lets you split the work across sessions and merge
 > the results afterward.
 
-## The data
+# The data
 
 The `microcredit` dataset ships with the package. Treatment assignment
 depended on applicants' credit scores: near a scoring cutoff, applicants
@@ -113,9 +113,9 @@ summary(microcredit$prop_score)
 
 ---
 
-## Part 1 — Do microloans affect all borrowers equally?
+# Part 1 — Do microloans affect all borrowers equally?
 
-### Setting up the specification
+## Setting up the specification
 
 We want to test whether the effect of being offered a microloan on **business
 expenses** varies across borrowers. We select a small set of covariates that
@@ -134,7 +134,7 @@ hte_covars <- c(
 )
 ```
 
-### Fitting the ensemble
+## Fitting the ensemble
 
 `ensemble_hte()` trains an ensemble of ML algorithms to detect heterogeneous
 treatment effects. It uses repeated cross-fitting—controlled by `M`
@@ -186,7 +186,7 @@ about 24,800 pesos (p = 0.03), reinforcing this finding.
 
 Let's look at each of these in more detail.
 
-### Is there heterogeneity? BLP
+## Is there heterogeneity? BLP
 
 The **Best Linear Predictor (BLP)** asks two questions:
 
@@ -211,7 +211,7 @@ effect of loan offers on business expenses. `beta2` is significant
 meaning that the effect of the loan offer genuinely differs across
 borrowers.
 
-### How do effects vary? GATES
+## How do effects vary? GATES
 
 **GATES (Group Average Treatment Effects)** sorts individuals into groups
 based on their predicted treatment effect—from lowest to highest—and
@@ -239,7 +239,7 @@ the top group than in the bottom group—is statistically significant
 (p = 0.03). This is consistent with the BLP result: the treatment
 genuinely affects borrowers differently.
 
-### Who is in each group? CLAN
+## Who is in each group? CLAN
 
 Now that we know treatment effects vary, the natural question is *who* is
 in each group. **CLAN (Classification Analysis)** answers this by computing
@@ -272,7 +272,7 @@ ownership—perhaps people with resources who are using the microloan to
 start or expand a business. By contrast, those in the bottom group are
 longer-established business owners with higher credit scores.
 
-### Preferred specification
+## Preferred specification
 
 The example above uses `M = 10` and two algorithms for speed. For a more
 thorough analysis, I recommend using `M >= 100` repetitions (even larger
@@ -302,9 +302,9 @@ work across sessions and merge the results afterward.
 
 ---
 
-## Part 2 — Is there a tradeoff between bank profits and borrower welfare?
+# Part 2 — Is there a tradeoff between bank profits and borrower welfare?
 
-### The question
+## The question
 
 Beyond impacts on borrowers, lenders and policymakers care about the financial
 sustainability of microlending. Can we identify which borrowers are most
@@ -318,7 +318,7 @@ an outcome (bank profits), then examining what that prediction implies for
 other outcomes. The `ensemble_pred()` function handles this type of
 prediction task.
 
-### Predicting an outcome that is only partially observed
+## Predicting an outcome that is only partially observed
 
 Bank profit per peso lent (`bank_profits_pp`) is only observed for individuals
 who were offered a loan *and* actually took it—the bank only earns revenue on
@@ -339,7 +339,7 @@ sum(has_loan)
 There are 650 borrowers with observed bank profits. The model will train on
 these but predict profitability for all 1,113 applicants.
 
-### Choosing covariates
+## Choosing covariates
 
 We pick covariates plausibly related to bank profitability. As before, this is
 a small selection for illustration; the original paper uses a richer
@@ -360,7 +360,7 @@ profit_covars <- c(
 )
 ```
 
-### Fitting the ensemble
+## Fitting the ensemble
 
 ```{r pred-fit, eval = FALSE}
 set.seed(2026)
@@ -405,7 +405,7 @@ is highly significant (p < 0.001).
 
 Let's look at each of these in more detail.
 
-### Does the model predict well? BLP for predictions
+## Does the model predict well? BLP for predictions
 
 Let's examine the calibration diagnostic more closely. `blp_pred()` is the
 prediction analogue of `blp()`. It regresses the observed outcome on the ML
@@ -426,7 +426,7 @@ The intercept is −0.01 (not significantly different from zero) and the slope
 is 0.99 (highly significant and close to one). This confirms the model is
 well calibrated.
 
-### Group averages of bank profits: GAVS
+## Group averages of bank profits: GAVS
 
 **GAVS (Group Averages)** sorts observations into groups by their predicted
 bank profit and computes the average *observed* profit in each group. If the
@@ -451,7 +451,7 @@ these borrowers. The middle tercile is roughly break-even (−1.5, not
 significant). The top tercile earns +8.7 pesos per peso lent. The
 top-minus-bottom gap of 18.7 pesos is highly significant (p < 0.001).
 
-### Do profitable borrowers also benefit from the loan? GATES
+## Do profitable borrowers also benefit from the loan? GATES
 
 This is the key question. We use `gates()` with a twist: we keep the groups
 defined by *predicted bank profits*, but we switch the outcome to *household
@@ -500,7 +500,7 @@ significant relationship could genuinely mean no tradeoff exists, but it could
 also simply reflect insufficient statistical power—too much noise in the
 treatment-effect estimates given the available sample.
 
-### Who is in each profit group? CLAN
+## Who is in each profit group? CLAN
 
 ```{r clan-pred, eval = PRECOMPUTED}
 clan_pred <- clan(fit_pred, n_groups = 3, variables = profit_covars)
@@ -536,9 +536,9 @@ allocation remain balanced across income groups?
 
 ---
 
-## Part 3 — What if the lender must maintain income balance?
+# Part 3 — What if the lender must maintain income balance?
 
-### The problem
+## The problem
 
 The CLAN results from Part 2 showed that profitable borrowers tend to have
 substantially higher baseline incomes (30,404 vs. 9,972 pesos). If a lender
@@ -550,7 +550,7 @@ allocation must be balanced across household-income groups.
 But does the equity constraint meaningfully reduce the lender's ability to
 identify profitable borrowers—or can both goals coexist?
 
-### How restricted targeting works
+## How restricted targeting works
 
 The `gavs_restricted()` and `gates_restricted()` functions compare two
 targeting strategies:
@@ -563,7 +563,7 @@ targeting strategies:
 
 The difference between the two measures the efficiency cost of the constraint.
 
-### Creating income quintiles
+## Creating income quintiles
 
 We split borrowers into five equally sized groups (quintiles) based on their
 baseline household income. The `cut()` function assigns each borrower to a
@@ -582,7 +582,7 @@ hhinc_quintile <- cut(
 table(hhinc_quintile)
 ```
 
-### Does the constraint hurt profitability? GAVS restricted
+## Does the constraint hurt profitability? GAVS restricted
 
 We compare average observed bank profits across terciles under both strategies:
 
@@ -617,7 +617,7 @@ key source of predictive variation. The lender can still identify profitable
 borrowers within each income group, but the overall separation is
 substantially reduced.
 
-### Does the constraint change welfare impacts? GATES restricted
+## Does the constraint change welfare impacts? GATES restricted
 
 The same comparison applies to treatment effects on household income. Do the
 welfare consequences of profit-based targeting change under the equity
@@ -659,7 +659,7 @@ whether it changes the welfare implications of that sorting.
 
 ---
 
-## Summary
+# Summary
 
 | Exercise | Question | Key functions |
 |----------|----------|---------------|
@@ -691,7 +691,7 @@ A few things worth remembering:
   uses `M = 500`. `combine_ensembles()` can merge results across sessions if
   computation time is a concern.
 
-## References
+# References
 
 - Athey, S., Fava, B., Karlan, D., Osman, A. and Zinman, J. (2025). *Profits
   and Social Impacts: Complements vs. Tradeoffs for Lenders in Three

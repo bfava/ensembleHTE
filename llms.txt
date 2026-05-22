@@ -33,6 +33,7 @@ For the statistical foundations, see [Fava
 You can install the development version of ensembleHTE from GitHub:
 
 ``` r
+
 # install.packages("devtools")
 devtools::install_github("bfava/ensembleHTE")
 ```
@@ -40,6 +41,7 @@ devtools::install_github("bfava/ensembleHTE")
 ## Quick Start
 
 ``` r
+
 library(ensembleHTE)
 data(microcredit)
 

@@ -169,7 +169,7 @@ arXiv:2511.04957*.
 ## Examples
 
 ``` r
-# \donttest{
+if (FALSE) { # \dontrun{
 data(microcredit)
 covars <- c("age", "gender", "education", "hhinc_yrly_base",
             "css_creditscorefinal")
@@ -180,45 +180,8 @@ fit <- ensemble_hte(
   prop_score = microcredit$prop_score,
   algorithms = c("lm", "grf"), M = 3, K = 3
 )
-#> Warning: Some propensity scores are below 0.20 or above 0.80. This package is designed for randomized controlled trials (RCTs), where propensity scores are typically well-balanced. Extreme propensity scores may indicate an observational study or a heavily unbalanced design. Please verify your experimental design.
 result <- clan(fit)
 print(result)
-#> CLAN Results (Classification Analysis)
-#> =======================================
-#> 
-#> Outcome: hhinc_yrly_end (treatment effects) | Groups: 3 | Reps: 3
-#> 
-#> Group Means (by predicted ITE):
-#>                               Top     Bottom       Else        All
-#>   ----------------------------------------------------------------
-#>   age                       40.53      43.23      42.83      42.06
-#>                            (0.45)     (0.48)     (0.32)     (0.26)
-#>   gender                     0.85       0.83       0.85       0.85
-#>                            (0.02)     (0.02)     (0.01)     (0.01)
-#>   education                  1.40       1.47       1.45       1.43
-#>                            (0.03)     (0.03)     (0.02)     (0.02)
-#>   hhinc_yrly_base        20673.88   18362.35   16685.36   18018.45
-#>                         (1017.12)   (919.40)   (628.69)   (544.67)
-#>   css_creditscorefinal      51.89      50.62      51.03      51.32
-#>                            (0.28)     (0.29)     (0.20)     (0.16)
-#> 
-#> Differences from Top Group:
-#>                            Top-Bot    Top-Else     Top-All
-#>   --------------------------------------------------------
-#>   age                     -2.70***    -2.30***    -1.53***
-#>                             (0.65)      (0.55)      (0.37)
-#>   gender                   0.02       -0.00       -0.00   
-#>                             (0.03)      (0.02)      (0.02)
-#>   education               -0.08.      -0.05       -0.04   
-#>                             (0.04)      (0.03)      (0.02)
-#>   hhinc_yrly_base       2311.52.    3988.51***  2655.42***
-#>                          (1389.10)   (1200.50)    (801.20)
-#>   css_creditscorefinal     1.27**      0.86*       0.57*  
-#>                             (0.40)      (0.34)      (0.23)
-#> 
-#> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 plot(result)
-
-# }
+} # }
 ```

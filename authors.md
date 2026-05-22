@@ -12,7 +12,7 @@ Source:
 
 Fava B (2025). “Training and Testing with Multiple Splits: A Central
 Limit Theorem for Split-Sample Estimators.”
-[doi:10.48550/arXiv.2511.04957](https://doi.org/10.48550/arXiv.2511.04957),
+[doi:10.48550/arXiv.2511.04957](https://doi.org/10.48550/arXiv.2511.04957).
 2511.04957, <https://arxiv.org/abs/2511.04957>.
 
     @Misc{,

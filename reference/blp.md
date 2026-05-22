@@ -24,6 +24,7 @@ blp(
   treatment = NULL,
   prop_score = NULL,
   controls = NULL,
+  baseline_as_control = NULL,
   subset = NULL
 )
 ```
@@ -84,6 +85,23 @@ blp(
   Character vector of control variable names to include in regression.
   These must be column names present in the `data` argument used when
   calling the ensemble function.
+
+- baseline_as_control:
+
+  Logical or NULL. Whether to include stored baseline predictions as
+  control variables in the regression. Options:
+
+  - NULL (default): include baseline if it was stored in the fit
+    (`store_baseline != "none"`); omit otherwise
+
+  - TRUE: always include; errors if no baseline was stored in the fit
+
+  - FALSE: exclude even if baseline was stored
+
+  Applies to `ensemble_hte_fit` objects only. For
+  `store_baseline = "ensemble"` a single column named `"baseline"` is
+  added per repetition. For `store_baseline = "all"` one column per
+  algorithm is added.
 
 - subset:
 
@@ -175,7 +193,7 @@ arXiv:2511.04957*.
 ## Examples
 
 ``` r
-# \donttest{
+if (FALSE) { # \dontrun{
 data(microcredit)
 covars <- c("age", "gender", "education", "hhinc_yrly_base",
             "css_creditscorefinal")
@@ -186,26 +204,7 @@ fit <- ensemble_hte(
   prop_score = microcredit$prop_score,
   algorithms = c("lm", "grf"), M = 3, K = 3
 )
-#> Warning: Some propensity scores are below 0.20 or above 0.80. This package is designed for randomized controlled trials (RCTs), where propensity scores are typically well-balanced. Extreme propensity scores may indicate an observational study or a heavily unbalanced design. Please verify your experimental design.
 result <- blp(fit)
 print(result)
-#> BLP Results (Best Linear Predictor of CATE)
-#> ============================================
-#> 
-#> Fit type: HTE (ensemble_hte)
-#> Outcome analyzed: hhinc_yrly_end
-#> Repetitions: 3
-#> 
-#> Coefficients:
-#>   beta1 (ATE): Average Treatment Effect
-#>   beta2 (HET): Heterogeneity loading (significant = ML captures heterogeneity)
-#> 
-#>     Term    Estimate   Std.Error   t value    Pr(>|t|)
-#>   ----------------------------------------------------
-#>    beta1     1575.64     1742.47      0.90       0.366 
-#>    beta2       -0.37        0.56     -0.66       0.511 
-#> 
-#> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-# }
+} # }
 ```

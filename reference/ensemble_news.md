@@ -50,6 +50,7 @@ repository before pushing a new release. The file uses R's DCF format
 with one record per version, separated by blank lines. Newest version
 first:
 
+
     Version: 0.3.0
     Status: recommended
     Message: New feature: CLAN improvements.

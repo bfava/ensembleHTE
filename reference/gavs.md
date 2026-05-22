@@ -198,7 +198,7 @@ arXiv:2511.04957*.
 ## Examples
 
 ``` r
-# \donttest{
+if (FALSE) { # \dontrun{
 data(microcredit)
 covars <- c("age", "gender", "education", "hhinc_yrly_base",
             "css_creditscorefinal")
@@ -209,34 +209,8 @@ fit <- ensemble_hte(
   prop_score = microcredit$prop_score,
   algorithms = c("lm", "grf"), M = 3, K = 3
 )
-#> Warning: Some propensity scores are below 0.20 or above 0.80. This package is designed for randomized controlled trials (RCTs), where propensity scores are typically well-balanced. Extreme propensity scores may indicate an observational study or a heavily unbalanced design. Please verify your experimental design.
 result <- gavs(fit, n_groups = 3)
 print(result)
-#> GAVS Results (Group Averages)
-#> =============================
-#> 
-#> Outcome analyzed: hhinc_yrly_end
-#> Number of groups: 3
-#> Repetitions: 3
-#> 
-#> Group Average Outcomes (groups by predicted ITE):
-#> 
-#>   Group    Estimate   Std.Error   t value    Pr(>|t|)
-#>   ----------------------------------------------------
-#>       1    11429.93     1680.35      6.80       0.000 ***
-#>       2    12158.02     1500.99      8.10       0.000 ***
-#>       3    12931.36     1298.40      9.96       0.000 ***
-#> 
-#> Heterogeneity Tests:
-#>   ----------------------------------------------------
-#>           Test    Estimate   Std.Error   t value    Pr(>|t|)
-#>   ----------------------------------------------------
-#>     Top-Bottom     1501.43     2132.22      0.70       0.481 
-#>        Top-All      758.21     1152.55      0.66       0.511 
-#> 
-#> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 plot(result)
-
-# }
+} # }
 ```

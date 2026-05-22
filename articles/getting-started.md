@@ -46,6 +46,7 @@ contains data from a randomized microfinance experiment in the
 Philippines where microloans were randomly offered to applicants.
 
 ``` r
+
 library(ensembleHTE)
 data(microcredit)
 
@@ -72,6 +73,7 @@ We test whether the effect of being offered a microloan on business
 expenses varies across borrowers.
 
 ``` r
+
 # Select covariates
 hte_covars <- c("css_creditscorefinal", "own_anybus",
                 "max_yearsinbusiness", "css_assetvalue")
@@ -153,6 +155,7 @@ summary(fit)
 ### 3. Analyze Treatment Effect Heterogeneity
 
 ``` r
+
 # Best Linear Predictor (BLP)
 blp_results <- blp(fit)
 print(blp_results)
@@ -211,6 +214,7 @@ plot](getting-started_files/figure-html/analysis-1.png)
 
 ``` r
 
+
 # Classification Analysis (CLAN)
 clan_results <- clan(fit, n_groups = 3)
 print(clan_results)
@@ -259,6 +263,7 @@ only on borrowers who actually took a loan (where bank profits are
 observed):
 
 ``` r
+
 # Identify borrowers with observed bank profits
 has_loan <- microcredit$treat == 1 & microcredit$loan_size > 0
 
@@ -362,6 +367,7 @@ requiring income-balanced loan allocation reduces the lender’s ability
 to identify profitable borrowers:
 
 ``` r
+
 # Compare targeting strategies
 comparison <- gavs_restricted(
   pred_fit,
@@ -436,6 +442,7 @@ evaluate results on a subset of observations. This is useful when:
 - You need to exclude certain observations from analysis
 
 ``` r
+
 # Subset with logical vector (e.g., only business owners)
 subset_biz <- microcredit$own_anybus == 1
 gavs_results <- gavs(pred_fit, n_groups = 3, subset = subset_biz)
@@ -485,6 +492,7 @@ cluster-robust standard errors. The `microcredit` dataset is
 cross-sectional, so this example uses simulated data:
 
 ``` r
+
 # Simulate panel data: 200 individuals x 4 periods
 set.seed(123)
 N <- 200; T_periods <- 4

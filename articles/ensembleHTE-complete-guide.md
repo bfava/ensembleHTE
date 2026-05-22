@@ -41,18 +41,22 @@ This package is designed for researchers and practitioners who want to:
 In randomized controlled trials (RCTs), the **Average Treatment Effect
 (ATE)** measures the mean effect of treatment across the population:
 
-$$\text{ATE} = E\left\lbrack Y_{i}(1) - Y_{i}(0) \right\rbrack,$$
+``` math
+\text{ATE} = E[Y_i(1) - Y_i(0)],
+```
 
-where $Y_{i}(1)$ and $Y_{i}(0)$ are the potential outcomes for
-individual $i$ under treatment and control, respectively.
+where $`Y_i(1)`$ and $`Y_i(0)`$ are the potential outcomes for
+individual $`i`$ under treatment and control, respectively.
 
 However, treatment effects often vary across individuals. The
 **Conditional Average Treatment Effect (CATE)** captures this
 heterogeneity:
 
-$$\text{CATE}(x) = \tau(x) = E\left\lbrack Y_{i}(1) - Y_{i}(0)|X_{i} = x \right\rbrack$$
+``` math
+\text{CATE}(x) = \tau(x) = E[Y_i(1) - Y_i(0) | X_i = x]
+```
 
-where $X_{i}$ represents individual characteristics (covariates).
+where $`X_i`$ represents individual characteristics (covariates).
 
 #### Group Average Treatment Effects (GATES)
 
@@ -60,7 +64,7 @@ where $X_{i}$ represents individual characteristics (covariates).
 for and visualize treatment effect heterogeneity by:
 
 1.  Using machine learning to predict individual treatment effects
-    ${\widehat{\tau}}_{i}$ based on covariates
+    $`\hat{\tau}_i`$ based on covariates
 2.  Sorting individuals into quantile groups (e.g., terciles) based on
     these predictions
 3.  Estimating the average treatment effect within each group
@@ -90,6 +94,7 @@ This package improves upon existing single-algorithm approaches by:
 Install the development version from GitHub:
 
 ``` r
+
 # install.packages("devtools")
 devtools::install_github("bfava/ensembleHTE")
 ```
@@ -101,12 +106,14 @@ automatically.
 For additional ML algorithms, you may want to install optional packages:
 
 ``` r
+
 install.packages(c("glmnet", "gbm", "ranger"))
 ```
 
 It is recommended to frequently check for package updates:
 
 ``` r
+
 ensemble_news()
 ```
 
@@ -126,6 +133,7 @@ present guide provides comprehensive coverage of every feature and
 option available in the package.
 
 ``` r
+
 library(ensembleHTE)
 data(microcredit)
 
@@ -171,6 +179,7 @@ The main function for HTE estimation is
 [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md):
 
 ``` r
+
 # Fit ensemble HTE model
 # Start with M = 2 for quick debugging, then increase to M >= 100 for final results
 fit <- ensemble_hte(
@@ -226,6 +235,7 @@ The [`print()`](https://rdrr.io/r/base/print.html) method shows:
 For more detailed output:
 
 ``` r
+
 summary(fit)
 #> Ensemble HTE Summary
 #> ====================
@@ -275,6 +285,7 @@ extracts the matrix of individualized treatment effect predictions from
 a fitted HTE model:
 
 ``` r
+
 # Extract ITE matrix: n observations x M repetitions
 ite_matrix <- ite(fit)
 dim(ite_matrix)
@@ -296,6 +307,7 @@ function computes average treatment effects for groups defined by
 predicted ITE quantiles:
 
 ``` r
+
 # Compute GATES with 3 groups (terciles)
 gates_results <- gates(fit, n_groups = 3)
 print(gates_results)
@@ -351,6 +363,7 @@ in that group, along with standard errors, t-statistics, and p-values.
 #### Visualizing GATES
 
 ``` r
+
 plot(gates_results)
 ```
 
@@ -374,6 +387,7 @@ The [`blp()`](https://bfava.com/ensembleHTE/reference/blp.md) function
 tests whether the ML predictions capture meaningful heterogeneity:
 
 ``` r
+
 # Compute BLP
 blp_results <- blp(fit)
 print(blp_results)
@@ -401,23 +415,26 @@ print(blp_results)
 
 The BLP regression is:
 
-$$Y_{i} = \beta_{1}\left( D_{i} - p_{i} \right) + \beta_{2}\left( D_{i} - p_{i} \right)\left( {\widehat{\tau}}_{i} - \bar{\widehat{\tau}} \right) + \epsilon_{i}$$
+``` math
+Y_i = \beta_1 (D_i - p_i) + \beta_2 (D_i - p_i)(\hat{\tau}_i - \bar{\hat{\tau}}) + \epsilon_i
+```
 
-where $p_{i}$ is the propensity score (probability of treatment), and
-$\bar{\widehat{\tau}}$ is the average predicted treatment effect.
+where $`p_i`$ is the propensity score (probability of treatment), and
+$`\bar{\hat{\tau}}`$ is the average predicted treatment effect.
 
 **Coefficients**:
 
 - **beta1 (ATE)**: Estimates the overall average treatment effect.
 - **beta2 (HET)**: Tests heterogeneity. A significant beta2 (p \< 0.05)
-  indicates that the ML predictions ${\widehat{\tau}}_{i}$ capture
-  genuine treatment effect heterogeneity. If beta2 ≈ 1, the predictions
-  are well-calibrated.
+  indicates that the ML predictions $`\hat{\tau}_i`$ capture genuine
+  treatment effect heterogeneity. If beta2 ≈ 1, the predictions are
+  well-calibrated.
 
 You can also add control variables to the BLP regression using the
 `controls` parameter:
 
 ``` r
+
 # BLP with additional control variables
 blp_with_controls <- blp(fit, controls = c("age", "gender"))
 ```
@@ -425,6 +442,7 @@ blp_with_controls <- blp(fit, controls = c("age", "gender"))
 #### Visualizing BLP
 
 ``` r
+
 plot(blp_results)
 ```
 
@@ -440,6 +458,7 @@ characterizes which types of individuals are in the top vs. bottom
 groups:
 
 ``` r
+
 # Compute CLAN for all covariates
 clan_results <- clan(fit, n_groups = 3)
 print(clan_results)
@@ -531,6 +550,7 @@ predictions define where the group boundaries fall*.
   different groups than they would be in the full sample.
 
 ``` r
+
 # Suppose you want to analyze CLAN only for business owners
 subset_biz <- microcredit$own_anybus == 1
 
@@ -545,6 +565,7 @@ clan_reranked <- clan(fit, n_groups = 3, subset = subset_biz,
 #### Visualizing CLAN
 
 ``` r
+
 plot(clan_results)
 ```
 
@@ -573,6 +594,7 @@ This is useful for:
 ### Fitting an Ensemble Prediction Model
 
 ``` r
+
 # Predict bank profitability using ensemble_pred
 fit_pred <- ensemble_pred(
   Y    = "bank_profits_pp",
@@ -655,6 +677,7 @@ computes average outcomes for groups defined by prediction quantiles —
 the prediction counterpart of GATES:
 
 ``` r
+
 gavs_results <- gavs(fit_pred, n_groups = 3)
 print(gavs_results)
 #> GAVS Results (Group Averages)
@@ -694,6 +717,7 @@ higher observed Y on average.
 #### Visualizing GAVS
 
 ``` r
+
 plot(gavs_results)
 ```
 
@@ -711,6 +735,7 @@ predictive power. This is distinct from
 for treatment effect heterogeneity.
 
 ``` r
+
 blp_pred_results <- blp_pred(fit_pred)
 print(blp_pred_results)
 #> BLP Results (Best Linear Predictor - Prediction)
@@ -738,20 +763,23 @@ print(blp_pred_results)
 
 The BLP_PRED regression is:
 
-$$Y_{i} = \alpha + \beta{\widehat{Y}}_{i} + \epsilon_{i}$$
+``` math
+Y_i = \alpha + \beta \hat{Y}_i + \epsilon_i
+```
 
 **Coefficients**:
 
 - **Intercept (alpha)**: Should be close to 0 if predictions are
   well-calibrated.
 - **beta**: Tests predictive power. A significant beta (p \< 0.05)
-  indicates that the ML predictions ${\widehat{Y}}_{i}$ carry genuine
+  indicates that the ML predictions $`\hat{Y}_i`$ carry genuine
   predictive content. If beta ≈ 1, the predictions are well-calibrated
   in magnitude.
 
 #### Visualizing BLP_PRED
 
 ``` r
+
 plot(blp_pred_results)
 ```
 
@@ -780,29 +808,28 @@ package supports four strategies:
 
 The R-learner (Nie & Wager, 2021) uses residual-on-residual regression:
 
-1.  Estimate the conditional mean
-    $\widehat{m}(x) = E\left\lbrack Y|X = x \right\rbrack$ using the
+1.  Estimate the conditional mean $`\hat{m}(x) = E[Y|X=x]`$ using the
     specified base algorithm
-2.  Compute residuals:
-    ${\widetilde{Y}}_{i} = Y_{i} - \widehat{m}\left( X_{i} \right)$ and
-    ${\widetilde{D}}_{i} = D_{i} - p_{i}$
-3.  Estimate the CATE $\widehat{\tau}(x)$ by regressing $\widetilde{Y}$
-    on $\widetilde{D}$ (via a causal forest or weighted regression)
+2.  Compute residuals: $`\tilde{Y}_i = Y_i - \hat{m}(X_i)`$ and
+    $`\tilde{D}_i = D_i - p_i`$
+3.  Estimate the CATE $`\hat{\tau}(x)`$ by regressing $`\tilde{Y}`$ on
+    $`\tilde{D}`$ (via a causal forest or weighted regression)
 
 **Note on propensity scores**: The original R-learner framework
 (Robinson, 1988; Nie & Wager, 2021) estimates the propensity score
-$e(x) = E\left\lbrack D|X \right\rbrack$ as a nuisance parameter. Since
-**this package is designed for RCTs**, where the propensity score is
-known by design, the implementation uses the **known propensity score**
-$p_{i}$ directly rather than estimating it. This avoids an unnecessary
-estimation step and uses the exact treatment assignment probabilities
-from the experimental protocol.
+$`e(x) = E[D|X]`$ as a nuisance parameter. Since **this package is
+designed for RCTs**, where the propensity score is known by design, the
+implementation uses the **known propensity score** $`p_i`$ directly
+rather than estimating it. This avoids an unnecessary estimation step
+and uses the exact treatment assignment probabilities from the
+experimental protocol.
 
 The `r_learner` parameter controls the algorithm used for the CATE
 estimation step. By default, it uses `"grf"` (causal forest), but any
 mlr3 learner can be specified:
 
 ``` r
+
 fit_r <- ensemble_hte(
   Y = "exp_yrly_end",
   D = "treat",
@@ -819,9 +846,12 @@ fit_r <- ensemble_hte(
 
 Trains separate models for treated and control groups:
 
-$$\widehat{\tau}(x) = {\widehat{\mu}}_{1}(x) - {\widehat{\mu}}_{0}(x)$$
+``` math
+\hat{\tau}(x) = \hat{\mu}_1(x) - \hat{\mu}_0(x)
+```
 
 ``` r
+
 fit_t <- ensemble_hte(
   Y = "exp_yrly_end",
   D = "treat",
@@ -837,9 +867,15 @@ fit_t <- ensemble_hte(
 
 Trains a single model with treatment as a feature:
 
-$$\widehat{\mu}(x,d) = E\left\lbrack Y|X = x,D = d \right\rbrack$$$$\widehat{\tau}(x) = \widehat{\mu}(x,1) - \widehat{\mu}(x,0)$$
+``` math
+\hat{\mu}(x, d) = E[Y | X=x, D=d]
+```
+``` math
+\hat{\tau}(x) = \hat{\mu}(x, 1) - \hat{\mu}(x, 0)
+```
 
 ``` r
+
 fit_s <- ensemble_hte(
   Y = "exp_yrly_end",
   D = "treat",
@@ -857,6 +893,7 @@ A two-stage approach (Künzel et al., 2019) that imputes counterfactual
 outcomes:
 
 ``` r
+
 fit_x <- ensemble_hte(
   Y = "exp_yrly_end",
   D = "treat",
@@ -883,6 +920,7 @@ Use `"grf"` for generalized random forest (Athey, Tibshirani & Wager,
 2019):
 
 ``` r
+
 fit <- ensemble_hte(
   Y = "exp_yrly_end",
   D = "treat",
@@ -919,6 +957,7 @@ For most applications, we recommend using **3-4 algorithms** (at most
 5). A good general-purpose ensemble:
 
 ``` r
+
 # Good general-purpose ensemble (4 algorithms)
 fit <- ensemble_hte(
   Y = "exp_yrly_end",
@@ -948,6 +987,7 @@ Enable automatic tuning by setting `tune = TRUE`. The function has
 sensible defaults, so no additional parameters are required:
 
 ``` r
+
 # Simple usage with defaults
 fit_tuned <- ensemble_hte(
   Y = "exp_yrly_end",
@@ -967,6 +1007,7 @@ You can customize the built-in tuning process by passing a list of
 scalar parameters via `tune_params`:
 
 ``` r
+
 # Customized tuning parameters (optional)
 fit_tuned <- ensemble_hte(
   Y = "exp_yrly_end",
@@ -993,6 +1034,7 @@ objects directly. This lets you specify a custom tuner, terminator,
 resampling strategy, search space, and measure:
 
 ``` r
+
 # Advanced: pass mlr3tuning objects for full control
 fit_tuned <- ensemble_hte(
   Y = "exp_yrly_end",
@@ -1031,6 +1073,7 @@ available for a given learner, run
 `mlr3::lrn("regr.<algorithm>")$param_set`:
 
 ``` r
+
 fit <- ensemble_hte(
   Y = "exp_yrly_end",
   D = "treat",
@@ -1057,6 +1100,7 @@ estimated via cross-validation (`ensemble_strategy = "cv"`). You can
 switch to simple averaging:
 
 ``` r
+
 # Simple average of all algorithm predictions (equal weights)
 fit_avg <- ensemble_hte(
   Y = "exp_yrly_end",
@@ -1086,6 +1130,7 @@ This is appropriate for simple randomization with equal assignment
 probabilities.
 
 ``` r
+
 # For standard 50/50 randomization, no need to specify prop_score
 fit <- ensemble_hte(
   Y = "exp_yrly_end",
@@ -1102,6 +1147,7 @@ everyone has the same probability (even if not 50%), the default will
 correctly use the sample treatment fraction:
 
 ``` r
+
 # In the microcredit experiment, propensity scores vary by credit-score window.
 # Pass the column name to use them:
 fit <- ensemble_hte(
@@ -1148,6 +1194,7 @@ You can disable scaling if your covariates are already on comparable
 scales:
 
 ``` r
+
 fit <- ensemble_hte(
   Y = "exp_yrly_end",
   D = "treat",
@@ -1164,6 +1211,7 @@ fit <- ensemble_hte(
 Speed up computation by parallelizing across repetitions:
 
 ``` r
+
 # Use 4 cores for faster computation
 fit <- ensemble_hte(
   Y = "exp_yrly_end",
@@ -1188,6 +1236,7 @@ re-running everything, or (2) you split work across multiple machines or
 cluster jobs for faster computation:
 
 ``` r
+
 # Session 1: Run on server 1
 fit1 <- ensemble_hte(
   Y = "exp_yrly_end", D = "treat", X = hte_covars,
@@ -1216,6 +1265,7 @@ can combine multiple fits using
 [`Reduce()`](https://rdrr.io/r/base/funprog.html):
 
 ``` r
+
 # Example: combining fits from 100 cluster jobs
 # Each job saved as fit_1.rds, fit_2.rds, ..., fit_100.rds
 
@@ -1249,11 +1299,11 @@ The key insight is that you can:
 
 This decoupling opens up many possibilities:
 
-| Prediction Target          | Analysis Target               | Use Case                                                                       |
-|----------------------------|-------------------------------|--------------------------------------------------------------------------------|
-| ITE on outcome Y           | Treatment effect on Z         | Do predicted beneficiaries on Y also benefit on Z?                             |
-| Predicted Y (no treatment) | Treatment effect on Z         | Do individuals with high predicted Y experience larger treatment effects on Z? |
-| ITE on outcome Y           | Average of endline Z by group | What are the post-treatment characteristics of predicted beneficiaries?        |
+| Prediction Target | Analysis Target | Use Case |
+|----|----|----|
+| ITE on outcome Y | Treatment effect on Z | Do predicted beneficiaries on Y also benefit on Z? |
+| Predicted Y (no treatment) | Treatment effect on Z | Do individuals with high predicted Y experience larger treatment effects on Z? |
+| ITE on outcome Y | Average of endline Z by group | What are the post-treatment characteristics of predicted beneficiaries? |
 
 **Note on the third case**: This is distinct from CLAN, which examines
 baseline covariates X. Here, Z is an **endline outcome** measured after
@@ -1269,6 +1319,7 @@ want to know if the same borrowers who see larger effects on expenses
 also experience larger effects on household income.
 
 ``` r
+
 # Step 1: Fit HTE model predicting treatment effects on business expenses
 fit_exp <- ensemble_hte(
   Y = "exp_yrly_end",
@@ -1331,6 +1382,7 @@ and then ask whether borrowers the bank would rank as most profitable
 also see larger treatment effects on household income.
 
 ``` r
+
 # Step 1: Predict bank profits using ensemble_pred (no treatment structure)
 fit_pred <- ensemble_pred(
   Y    = "bank_profits_pp",
@@ -1395,6 +1447,7 @@ different variable across groups defined by predicted treatment effects.
 This extends the CLAN analysis to any variable.
 
 ``` r
+
 # Step 1: Fit HTE model on business expenses
 fit_exp <- ensemble_hte(
   Y = "exp_yrly_end",
@@ -1501,6 +1554,7 @@ We want to know: “Do individuals with high predicted bank profits have
 different treatment effects on household income?”
 
 ``` r
+
 # Step 1: Train prediction model on loan recipients only (where profits observed)
 # But generate predicted bank profits for EVERYONE
 fit_profits <- ensemble_pred(
@@ -1558,6 +1612,7 @@ Now you can use the predicted bank profits (which are available for
 everyone) to analyze treatment effects on household income:
 
 ``` r
+
 # Step 2: Analyze treatment effects on income, grouped by predicted bank profits
 # This answers: "Do individuals with high predicted bank profits have different
 # treatment effects on household income?"
@@ -1625,6 +1680,7 @@ This design is valuable because:
     variable
 
 ``` r
+
 # Complete workflow:
 fit_subset <- ensemble_pred(
   Y    = "bank_profits_pp",
@@ -1658,6 +1714,7 @@ a three-arm trial you could estimate treatment effects between two arms
 C:
 
 ``` r
+
 # Simulate a three-arm trial: Control (C), Treatment A, Treatment B
 set.seed(42)
 N <- 600
@@ -1760,6 +1817,7 @@ You can answer this by fitting separate HTE models for each arm
 comparison and then using cross-outcome analysis:
 
 ``` r
+
 # Step 1: Also estimate HTE for B vs. C
 three_arm$D_B <- as.integer(three_arm$arm == "B")
 
@@ -1819,6 +1877,7 @@ outcomes. Using the model fitted above and income quintiles (created in
 the data-loading step):
 
 ``` r
+
 # Compare strategies
 comparison <- gates_restricted(fit, restrict_by = "hhinc_quintile", n_groups = 3)
 print(comparison)
@@ -1897,6 +1956,7 @@ Key tests:
 #### Visualizing Strategy Comparison
 
 ``` r
+
 plot(comparison)
 ```
 
@@ -1914,6 +1974,7 @@ The same comparison framework applies to prediction tasks via
 [`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md):
 
 ``` r
+
 # Compare prediction strategies by income quintile
 gavs_comparison <- gavs_restricted(
   fit_pred,
@@ -2012,6 +2073,7 @@ simulated panel data. Suppose 200 individuals are each observed over 4
 time periods, with treatment assigned at the individual level:
 
 ``` r
+
 # Simulate panel data: 200 individuals x 4 periods
 set.seed(123)
 N <- 200; T_periods <- 4
@@ -2045,6 +2107,7 @@ clan_results <- clan(fit)
 ### Example: Panel Data with ensemble_pred
 
 ``` r
+
 # Fit ensemble prediction model with panel data
 fit_pred <- ensemble_pred(
   Y = "Y",
@@ -2065,10 +2128,10 @@ blp_pred_results <- blp_pred(fit_pred)
 When `individual_id` is provided:
 
 - **Fold assignment**: The K-fold split is performed at the individual
-  level. If there are $N$ individuals, each fold contains approximately
-  $N/K$ individuals (with all their time periods). This ensures that the
-  same individual never appears in both training and test sets within a
-  fold.
+  level. If there are $`N`$ individuals, each fold contains
+  approximately $`N/K`$ individuals (with all their time periods). This
+  ensures that the same individual never appears in both training and
+  test sets within a fold.
 - **Standard errors**: All regressions use
   [`sandwich::vcovCL()`](https://sandwich.R-Forge.R-project.org/reference/vcovCL.html)
   with clustering at the individual level instead of
@@ -2093,12 +2156,12 @@ The ensemble approach works best with sufficient sample size. We
 recommend using **3-4 algorithms** (at most 5) and **K = 3** folds for
 most applications:
 
-| n        | Algorithms | K   | Groups | Notes                                           |
-|----------|------------|-----|--------|-------------------------------------------------|
-| \< 200   | 1-2        | 2   | 3      | Results may be unstable; interpret with caution |
-| 200-500  | 1-2        | 3   | 3      | K = 3 recommended; K = 5 may be unstable        |
-| 500-2000 | 3-4        | 3-5 | 3      | Standard usage                                  |
-| \> 2000  | 3-5        | 3-5 | 3-5    | Can use K ≥ 5 for large samples                 |
+| n | Algorithms | K | Groups | Notes |
+|----|----|----|----|----|
+| \< 200 | 1-2 | 2 | 3 | Results may be unstable; interpret with caution |
+| 200-500 | 1-2 | 3 | 3 | K = 3 recommended; K = 5 may be unstable |
+| 500-2000 | 3-4 | 3-5 | 3 | Standard usage |
+| \> 2000 | 3-5 | 3-5 | 3-5 | Can use K ≥ 5 for large samples |
 
 ### Choosing Parameters
 
@@ -2236,35 +2299,35 @@ forests. *The Annals of Statistics*, 47(2), 1148-1178.
 
 ### Core Estimation Functions
 
-| Function                                                                              | Purpose                                                |
-|---------------------------------------------------------------------------------------|--------------------------------------------------------|
-| [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md)           | Fit ensemble model for heterogeneous treatment effects |
-| [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md)         | Fit ensemble model for prediction (no treatment)       |
-| [`combine_ensembles()`](https://bfava.com/ensembleHTE/reference/combine_ensembles.md) | Combine multiple ensemble fits                         |
+| Function | Purpose |
+|----|----|
+| [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md) | Fit ensemble model for heterogeneous treatment effects |
+| [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md) | Fit ensemble model for prediction (no treatment) |
+| [`combine_ensembles()`](https://bfava.com/ensembleHTE/reference/combine_ensembles.md) | Combine multiple ensemble fits |
 
 ### Analysis Functions (Treatment Effects)
 
-| Function                                                                            | Purpose                                       |
-|-------------------------------------------------------------------------------------|-----------------------------------------------|
-| [`gates()`](https://bfava.com/ensembleHTE/reference/gates.md)                       | Group Average Treatment Effects               |
-| [`blp()`](https://bfava.com/ensembleHTE/reference/blp.md)                           | Best Linear Predictor of CATE                 |
-| [`clan()`](https://bfava.com/ensembleHTE/reference/clan.md)                         | Classification Analysis (characterize groups) |
+| Function | Purpose |
+|----|----|
+| [`gates()`](https://bfava.com/ensembleHTE/reference/gates.md) | Group Average Treatment Effects |
+| [`blp()`](https://bfava.com/ensembleHTE/reference/blp.md) | Best Linear Predictor of CATE |
+| [`clan()`](https://bfava.com/ensembleHTE/reference/clan.md) | Classification Analysis (characterize groups) |
 | [`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md) | Compare unrestricted vs. restricted targeting |
 
 ### Analysis Functions (Prediction)
 
-| Function                                                                          | Purpose                                        |
-|-----------------------------------------------------------------------------------|------------------------------------------------|
-| [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md)                       | Group Averages (for predictions)               |
-| [`blp_pred()`](https://bfava.com/ensembleHTE/reference/blp_pred.md)               | Best Linear Predictor (for predictions)        |
+| Function | Purpose |
+|----|----|
+| [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md) | Group Averages (for predictions) |
+| [`blp_pred()`](https://bfava.com/ensembleHTE/reference/blp_pred.md) | Best Linear Predictor (for predictions) |
 | [`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md) | Compare unrestricted vs. restricted prediction |
 
 ### Utility Functions
 
-| Function                                                                      | Purpose                                                  |
-|-------------------------------------------------------------------------------|----------------------------------------------------------|
-| [`ite()`](https://bfava.com/ensembleHTE/reference/ite.md)                     | Extract ITE prediction matrix from an `ensemble_hte` fit |
-| [`ensemble_news()`](https://bfava.com/ensembleHTE/reference/ensemble_news.md) | Check for package updates and view changelog             |
+| Function | Purpose |
+|----|----|
+| [`ite()`](https://bfava.com/ensembleHTE/reference/ite.md) | Extract ITE prediction matrix from an `ensemble_hte` fit |
+| [`ensemble_news()`](https://bfava.com/ensembleHTE/reference/ensemble_news.md) | Check for package updates and view changelog |
 
 ### Print and Plot Methods
 

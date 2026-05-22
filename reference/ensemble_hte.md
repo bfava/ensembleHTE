@@ -42,7 +42,8 @@ ensemble_hte(
   train_idx = NULL,
   ensemble_strategy = c("cv", "average"),
   individual_id = NULL,
-  n_cores = 1
+  n_cores = 1,
+  store_baseline = c("ensemble", "none", "all")
 )
 ```
 
@@ -317,6 +318,42 @@ ensemble_hte(
   [`future::plan()`](https://future.futureverse.org/reference/plan.html)
   before calling this function.
 
+- store_baseline:
+
+  Character. Controls whether baseline outcome predictions are stored in
+  the returned object. Options:
+
+  `"ensemble"` (default)
+
+  :   Computes an ensembled baseline prediction by fitting a linear
+      regression on the *control* sample (\\D_i = 0\\, training
+      observations only), regressing the observed outcome on all
+      per-algorithm baseline predictions: \$\$Y_i = \alpha + \sum_a
+      \beta_a \hat{b}\_{a,i} + \varepsilon_i, \quad i : D_i = 0.\$\$
+      Applied to all observations separately for each of the M
+      repetitions. `$baseline` is a data.table with M columns (`rep_1`,
+      ..., `rep_M`), analogous to `$ite`.
+
+  `"all"`
+
+  :   Stores the raw per-algorithm baseline predictions for every
+      repetition. `$baseline` is a 3-dimensional array with dimensions
+      \\n \times A \times M\\, where `A = length(algorithms)` and `M` is
+      the number of repetitions. Dimnames along the second axis are
+      `baseline_<algorithm>`; along the third axis `rep_1, ..., rep_M`.
+
+  `"none"`
+
+  :   No baseline predictions are stored (`$baseline` is `NULL`).
+
+  The meaning of "baseline" depends on the metalearner:
+
+  - T/S/X-learner: \\\hat{Y}(0)\\ — the predicted control potential
+    outcome.
+
+  - R-learner: \\\hat{E}\[Y\|X\]\\ — the nuisance outcome model
+    prediction (marginal mean, not a counterfactual).
+
 ## Value
 
 An object of class `ensemble_hte_fit` containing:
@@ -324,6 +361,13 @@ An object of class `ensemble_hte_fit` containing:
 - ite:
 
   data.table of ITE predictions with M columns (one per repetition)
+
+- baseline:
+
+  Baseline predictions (`NULL` when `store_baseline = "none"`). Shape
+  depends on `store_baseline`: `"ensemble"` — data.table with M columns
+  (one per repetition); `"all"` — 3D array with dimensions \\n \times A
+  \times M\\.
 
 - call:
 
@@ -516,7 +560,7 @@ for standard prediction without treatment effects
 ## Examples
 
 ``` r
-# \donttest{
+if (FALSE) { # \dontrun{
 # --- HTE estimation on the Philippine microcredit experiment ---
 # Outcome: household income; Treatment: microloan offer
 data(microcredit)
@@ -531,113 +575,13 @@ fit <- ensemble_hte(
   prop_score = microcredit$prop_score,
   algorithms = c("lm", "grf"), M = 3, K = 3
 )
-#> Warning: Some propensity scores are below 0.20 or above 0.80. This package is designed for randomized controlled trials (RCTs), where propensity scores are typically well-balanced. Extreme propensity scores may indicate an observational study or a heavily unbalanced design. Please verify your experimental design.
 print(fit)
-#> Ensemble HTE Fit
-#> ================
-#> 
-#> Call:
-#> ensemble_hte(formula = hhinc_yrly_end ~ ., treatment = treat, 
-#>     data = dat, prop_score = microcredit$prop_score, M = 3, K = 3, 
-#>     algorithms = c("lm", "grf"))
-#> 
-#> Data:
-#>   Observations:      1113
-#>   Targeted outcome:  hhinc_yrly_end
-#>   Treatment:         treat
-#>   Covariates:        5
-#> 
-#> Model specification:
-#>   Algorithms:        lm, grf
-#>   Metalearner:       R-learner
-#>   Task type:         regression (continuous outcome)
-#>   R-learner method:  grf
-#> 
-#> Split-sample parameters:
-#>   Repetitions (M):   3
-#>   Folds (K):         3
-#>   Ensemble strategy: cross-validated BLP
-#>   Ensemble folds:    5
-#>   Covariate scaling: enabled
-#>   Hyperparameter tuning: disabled
 summary(fit)
-#> Ensemble HTE Summary
-#> ====================
-#> 
-#> Call:
-#> ensemble_hte(formula = hhinc_yrly_end ~ ., treatment = treat, 
-#>     data = dat, prop_score = microcredit$prop_score, M = 3, K = 3, 
-#>     algorithms = c("lm", "grf"))
-#> 
-#> Outcome:     hhinc_yrly_end
-#> Treatment:   treat
-#> Observations: 1113
-#> Repetitions:  3
-#> 
-#> Best Linear Predictor (BLP):
-#>   beta1 (ATE):       1487.38 (SE: 1776.24, p: 0.402) 
-#>   beta2 (HET):       -0.53 (SE: 0.70, p: 0.445) 
-#>   -> No significant heterogeneity detected (p >= 0.05)
-#> 
-#> Group Average Treatment Effects (GATES) with 3 groups:
-#>   Group    Estimate   Std.Error    Pr(>|t|)
-#>   --------------------------------------------
-#>       1     3630.46     2115.50       0.086 .
-#>       2     -652.61     2226.24       0.769 
-#>       3     1466.76     4425.24       0.740 
-#> 
-#>   Top - Bottom:  -2163.70 (SE: 4937.62, p: 0.661) 
-#> 
-#> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 # Downstream analysis
 gates(fit, n_groups = 3)
-#> GATES Results
-#> =============
-#> 
-#> Fit type: HTE (ensemble_hte)
-#> Outcome analyzed: hhinc_yrly_end
-#> Number of groups: 3
-#> Repetitions: 3
-#> 
-#> Group Average Treatment Effects:
-#> 
-#>   Group    Estimate   Std.Error   t value    Pr(>|t|)
-#>   ----------------------------------------------------
-#>       1     3630.46     2115.50      1.72       0.086 .
-#>       2     -652.61     2226.24     -0.29       0.769 
-#>       3     1466.76     4425.24      0.33       0.740 
-#> 
-#> Heterogeneity Tests:
-#>   ----------------------------------------------------
-#>           Test    Estimate   Std.Error   t value    Pr(>|t|)
-#>   ----------------------------------------------------
-#>     Top-Bottom    -2163.70     4937.62     -0.44       0.661 
-#>        Top-All      -20.53     3134.59     -0.01       0.995 
-#> 
-#> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 blp(fit)
-#> BLP Results (Best Linear Predictor of CATE)
-#> ============================================
-#> 
-#> Fit type: HTE (ensemble_hte)
-#> Outcome analyzed: hhinc_yrly_end
-#> Repetitions: 3
-#> 
-#> Coefficients:
-#>   beta1 (ATE): Average Treatment Effect
-#>   beta2 (HET): Heterogeneity loading (significant = ML captures heterogeneity)
-#> 
-#>     Term    Estimate   Std.Error   t value    Pr(>|t|)
-#>   ----------------------------------------------------
-#>    beta1     1487.38     1776.24      0.84       0.402 
-#>    beta2       -0.53        0.70     -0.76       0.445 
-#> 
-#> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-# }
+} # }
 if (FALSE) { # \dontrun{
 # --- Additional interface examples ---
 

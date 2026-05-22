@@ -87,4 +87,4 @@ predict_ite(
 
 ## Value
 
-List with predicted_y0, predicted_y1, and predicted_ite
+List with predicted_baseline, predicted_y1, and predicted_ite

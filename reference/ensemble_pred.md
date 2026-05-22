@@ -425,7 +425,7 @@ for heterogeneous treatment effect estimation
 ## Examples
 
 ``` r
-# \donttest{
+if (FALSE) { # \dontrun{
 # --- Predict bank profits using the microcredit data ---
 # Bank profits are only observed for borrowers (loan_size > 0 & treat == 1).
 # Use train_idx to train on borrowers, predict for the full sample.
@@ -447,158 +447,16 @@ fit <- ensemble_pred(
   algorithms = c("lm", "grf"), M = 3, K = 3
 )
 print(fit)
-#> Ensemble Prediction Fit
-#> =======================
-#> 
-#> Call:
-#> ensemble_pred(formula = f, data = dat, train_idx = microcredit$loan_size > 
-#>     0 & microcredit$treat == 1, M = 3, K = 3, algorithms = c("lm", 
-#>     "grf"))
-#> 
-#> Data:
-#>   Observations:      1113
-#>   Training obs:      650 (subset)
-#>   Outcome:           bank_profits_pp
-#>   Covariates:        5
-#> 
-#> Model specification:
-#>   Algorithms:        lm, grf
-#>   Task type:         regression (continuous outcome)
-#> 
-#> Split-sample parameters:
-#>   Repetitions (M):   3
-#>   Folds (K):         3
-#>   Ensemble strategy: cross-validated OLS
-#>   Ensemble folds:    5
-#>   Covariate scaling: enabled
-#>   Hyperparameter tuning: disabled
 summary(fit)
-#> Ensemble Prediction Summary
-#> ===========================
-#> 
-#> Call:
-#> ensemble_pred(formula = f, data = dat, train_idx = microcredit$loan_size > 
-#>     0 & microcredit$treat == 1, M = 3, K = 3, algorithms = c("lm", 
-#>     "grf"))
-#> 
-#> Outcome:     bank_profits_pp
-#> Observations: 1113
-#> Training obs: 650
-#> Repetitions:  3
-#> 
-#> Prediction Accuracy (averaged across 3 repetitions):
-#>   R-squared:         0.2
-#>   RMSE:              15.33
-#>   MAE:               11.03
-#>   Correlation:       0.44
-#> 
-#> Best Linear Predictor (BLP):
-#>   intercept:         -0.01 (SE: 0.60, p: 0.993) 
-#>   slope:             0.97 (SE: 0.07, p: 0.000) ***
-#>   -> Intercept close to 0 and slope close to 1 indicate good calibration
-#> Note: ML model trained on 650 of 1113 observations; GAVS evaluated on 650 observations. Use subset = "all" to use all observations.
-#> 
-#> Group Averages (GAVS) with 3 groups:
-#>   Group    Estimate   Std.Error    Pr(>|t|)
-#>   --------------------------------------------
-#>       1       -9.05        1.32       0.000 ***
-#>       2       -0.81        0.91       0.370 
-#>       3        7.64        1.03       0.000 ***
-#> 
-#>   Top - Bottom:  16.68 (SE: 1.67, p: 0.000) ***
-#> 
-#> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 # Can we predict bank profits? (blp_pred and gavs use training obs by default)
 blp_pred(fit)
-#> BLP Results (Best Linear Predictor - Prediction)
-#> =================================================
-#> 
-#> Fit type: Prediction (ensemble_pred)
-#> Outcome analyzed: bank_profits_pp
-#> Observations used: 650
-#> Repetitions: 3
-#> 
-#> Coefficients:
-#>   intercept: Regression intercept (0 = well-calibrated)
-#>   beta: Prediction loading (1 = well-calibrated)
-#> 
-#>         Term    Estimate   Std.Error   t value    Pr(>|t|)
-#>   ----------------------------------------------------
-#>    intercept       -0.01        0.60     -0.01       0.993 
-#>         beta        0.97        0.07     13.46       0.000 ***
-#> 
-#> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 gavs(fit, n_groups = 3)
-#> Note: ML model trained on 650 of 1113 observations; GAVS evaluated on 650 observations. Use subset = "all" to use all observations.
-#> GAVS Results (Group Averages)
-#> =============================
-#> 
-#> Outcome analyzed: bank_profits_pp
-#> Number of groups: 3
-#> Repetitions: 3
-#> 
-#> Data usage:
-#>   ML trained on:         650 of 1113 obs
-#>   Analysis evaluated on: 650 of 1113 obs
-#>   Groups (3) formed on: all observations (1113 obs)
-#> 
-#> Group Average Outcomes (groups by predicted Y):
-#> 
-#>   Group    Estimate   Std.Error   t value    Pr(>|t|)
-#>   ----------------------------------------------------
-#>       1       -9.05        1.32     -6.85       0.000 ***
-#>       2       -0.81        0.91     -0.90       0.370 
-#>       3        7.64        1.03      7.43       0.000 ***
-#> 
-#> Heterogeneity Tests:
-#>   ----------------------------------------------------
-#>           Test    Estimate   Std.Error   t value    Pr(>|t|)
-#>   ----------------------------------------------------
-#>     Top-Bottom       16.68        1.67      9.96       0.000 ***
-#>        Top-All        7.64        0.81      9.40       0.000 ***
-#> 
-#> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 # Do predicted profits correlate with treatment effects on household income?
 gates(fit, outcome = "hhinc_yrly_end", treatment = "treat",
       prop_score = dat$prop_score, subset = "all", n_groups = 3)
-#> Note: ML model trained on 650 of 1113 observations; GATES evaluated on 1113 observations. Use subset = "train" to restrict to training observations.
-#> GATES Results
-#> =============
-#> 
-#> Fit type: Prediction (ensemble_pred)
-#> Outcome analyzed: hhinc_yrly_end
-#>   (Groups based on: bank_profits_pp predicted Y)
-#> Number of groups: 3
-#> Repetitions: 3
-#> 
-#> Data usage:
-#>   ML trained on:         650 of 1113 obs
-#>   Analysis evaluated on: 1113 of 1113 obs
-#>   Groups (3) formed on: all observations (1113 obs)
-#> 
-#> Group Average Treatment Effects:
-#> 
-#>   Group    Estimate   Std.Error   t value    Pr(>|t|)
-#>   ----------------------------------------------------
-#>       1      240.98     2212.75      0.11       0.913 
-#>       2     -142.88     1560.51     -0.09       0.927 
-#>       3     4554.22     4499.98      1.01       0.312 
-#> 
-#> Heterogeneity Tests:
-#>   ----------------------------------------------------
-#>           Test    Estimate   Std.Error   t value    Pr(>|t|)
-#>   ----------------------------------------------------
-#>     Top-Bottom     4313.24     5022.80      0.86       0.390 
-#>        Top-All     3003.10     3134.93      0.96       0.338 
-#> 
-#> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-# }
+} # }
 if (FALSE) { # \dontrun{
 # --- Additional interface examples ---
 

@@ -50,6 +50,7 @@ cd ensembleHTE
 All new code should include tests:
 
 ``` r
+
 # Run tests
 devtools::test()
 

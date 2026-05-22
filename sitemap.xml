@@ -1,5 +1,6 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://bfava.com/ensembleHTE/404.html</loc></url>
+<url><loc>https://bfava.com/ensembleHTE/AGENTS.html</loc></url>
 <url><loc>https://bfava.com/ensembleHTE/CONTRIBUTING.html</loc></url>
 <url><loc>https://bfava.com/ensembleHTE/LICENSE-text.html</loc></url>
 <url><loc>https://bfava.com/ensembleHTE/LICENSE.html</loc></url>
@@ -25,6 +26,7 @@
 <url><loc>https://bfava.com/ensembleHTE/reference/dot-compute_coef_diff.html</loc></url>
 <url><loc>https://bfava.com/ensembleHTE/reference/dot-compute_reg_diff.html</loc></url>
 <url><loc>https://bfava.com/ensembleHTE/reference/dot-encode_factors_if_needed.html</loc></url>
+<url><loc>https://bfava.com/ensembleHTE/reference/dot-extract_baseline_rep.html</loc></url>
 <url><loc>https://bfava.com/ensembleHTE/reference/dot-fetch_update_status.html</loc></url>
 <url><loc>https://bfava.com/ensembleHTE/reference/dot-fit_model_grf.html</loc></url>
 <url><loc>https://bfava.com/ensembleHTE/reference/dot-fit_model_mlr3.html</loc></url>

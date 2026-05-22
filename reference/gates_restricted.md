@@ -22,6 +22,7 @@ gates_restricted(
   treatment = NULL,
   prop_score = NULL,
   controls = NULL,
+  baseline_as_control = NULL,
   subset = NULL,
   group_on = c("auto", "all", "analysis")
 )
@@ -95,6 +96,20 @@ gates_restricted(
 
   Optional character vector of control variable names from `data` to
   include as covariates in the GATES regression.
+
+- baseline_as_control:
+
+  Logical or NULL. Whether to include stored baseline predictions as
+  control variables in the GATES regressions. Options:
+
+  - NULL (default): include baseline if it was stored in the fit
+    (`store_baseline != "none"`); omit otherwise
+
+  - TRUE: always include; errors if no baseline was stored in the fit
+
+  - FALSE: exclude even if baseline was stored
+
+  Applies to `ensemble_hte_fit` objects only.
 
 - subset:
 
@@ -188,7 +203,7 @@ arXiv:2511.04957*.
 ## Examples
 
 ``` r
-# \donttest{
+if (FALSE) { # \dontrun{
 data(microcredit)
 covars <- c("age", "gender", "education", "hhinc_yrly_base",
             "css_creditscorefinal")
@@ -199,63 +214,10 @@ fit <- ensemble_hte(
   prop_score = microcredit$prop_score,
   algorithms = c("lm", "grf"), M = 3, K = 3
 )
-#> Warning: Some propensity scores are below 0.20 or above 0.80. This package is designed for randomized controlled trials (RCTs), where propensity scores are typically well-balanced. Extreme propensity scores may indicate an observational study or a heavily unbalanced design. Please verify your experimental design.
 
 # Compare unrestricted vs restricted ranking by gender
 comparison <- gates_restricted(fit, restrict_by = "gender", n_groups = 3)
 print(comparison)
-#> 
-#> GATES Comparison: Unrestricted vs Restricted Ranking
-#> ===================================================== 
-#> 
-#> Fit type: HTE (ensemble_hte) 
-#> 
-#> Strategy comparison:
-#>   - Unrestricted: Rank predictions across full sample
-#>   - Restricted: Rank predictions within groups ('gender')
-#>   - Restrict_by levels: 0, 1
-#> 
-#> Groups (3) defined by: predicted ITE
-#> Outcome: hhinc_yrly_end
-#> Observations: 1113
-#> Repetitions: 3
-#> 
-#> Unrestricted GATES Estimates:
-#> ---------------------------------------- 
-#>  Group Estimate SE      t    p-value 
-#>  1     1416.64  2710.90 0.52 0.601   
-#>  2     1867.31  2387.65 0.78 0.434   
-#>  3     1369.94  3384.16 0.40 0.686   
-#> 
-#> Top-Bottom: -46.71 (SE: 4532.04, p = 0.992) 
-#> All: 1550.44 (SE: 1712.99, p = 0.365) 
-#> Top-All: -180.51 (SE: 2613.52, p = 0.945) 
-#> 
-#> Restricted GATES Estimates:
-#> ---------------------------------------- 
-#>  Group Estimate SE      t    p-value 
-#>  1     882.48   2884.05 0.31 0.760   
-#>  2     2371.45  2306.03 1.03 0.304   
-#>  3     1328.01  3344.77 0.40 0.691   
-#> 
-#> Top-Bottom: 445.53 (SE: 4596.00, p = 0.923) 
-#> All: 1524.64 (SE: 1722.75, p = 0.376) 
-#> Top-All: -196.63 (SE: 2603.91, p = 0.940) 
-#> 
-#> Difference (Unrestricted - Restricted):
-#> ---------------------------------------- 
-#>  Group Estimate SE      t     p-value 
-#>  1     534.16   818.46  0.65  0.514   
-#>  2     -504.14  1439.18 -0.35 0.726   
-#>  3     41.92    1112.63 0.04  0.970   
-#> 
-#> Top-Bottom Diff: -492.23 (SE: 1413.78, p = 0.728) 
-#> All Diff: 25.80 (SE: 105.17, p = 0.806) 
-#> Top-All Diff: 16.12 (SE: 1129.88, p = 0.989) 
-#> 
-#> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 plot(comparison)
-
-# }
+} # }
 ```

@@ -24,6 +24,7 @@ gates(
   treatment = NULL,
   prop_score = NULL,
   controls = NULL,
+  baseline_as_control = NULL,
   restrict_by = NULL,
   subset = NULL,
   group_on = c("auto", "all", "analysis")
@@ -90,6 +91,23 @@ gates(
   Character vector of control variable names to include in regression.
   These must be column names present in the `data` argument used when
   calling the ensemble function.
+
+- baseline_as_control:
+
+  Logical or NULL. Whether to include stored baseline predictions as
+  control variables in the regression. Options:
+
+  - NULL (default): include baseline if it was stored in the fit
+    (`store_baseline != "none"`); omit otherwise
+
+  - TRUE: always include; errors if no baseline was stored in the fit
+
+  - FALSE: exclude even if baseline was stored
+
+  Applies to `ensemble_hte_fit` objects only. For
+  `store_baseline = "ensemble"` a single column named `"baseline"` is
+  added per repetition. For `store_baseline = "all"` one column per
+  algorithm is added.
 
 - restrict_by:
 
@@ -230,7 +248,7 @@ arXiv:2511.04957*.
 ## Examples
 
 ``` r
-# \donttest{
+if (FALSE) { # \dontrun{
 data(microcredit)
 covars <- c("age", "gender", "education", "hhinc_yrly_base",
             "css_creditscorefinal")
@@ -241,35 +259,8 @@ fit <- ensemble_hte(
   prop_score = microcredit$prop_score,
   algorithms = c("lm", "grf"), M = 3, K = 3
 )
-#> Warning: Some propensity scores are below 0.20 or above 0.80. This package is designed for randomized controlled trials (RCTs), where propensity scores are typically well-balanced. Extreme propensity scores may indicate an observational study or a heavily unbalanced design. Please verify your experimental design.
 result <- gates(fit, n_groups = 3)
 print(result)
-#> GATES Results
-#> =============
-#> 
-#> Fit type: HTE (ensemble_hte)
-#> Outcome analyzed: hhinc_yrly_end
-#> Number of groups: 3
-#> Repetitions: 3
-#> 
-#> Group Average Treatment Effects:
-#> 
-#>   Group    Estimate   Std.Error   t value    Pr(>|t|)
-#>   ----------------------------------------------------
-#>       1     4652.26     2737.68      1.70       0.089 .
-#>       2      157.92     2650.66      0.06       0.952 
-#>       3     -226.13     3308.73     -0.07       0.946 
-#> 
-#> Heterogeneity Tests:
-#>   ----------------------------------------------------
-#>           Test    Estimate   Std.Error   t value    Pr(>|t|)
-#>   ----------------------------------------------------
-#>     Top-Bottom    -4878.38     4327.68     -1.13       0.260 
-#>        Top-All    -1757.83     2596.78     -0.68       0.498 
-#> 
-#> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 plot(result)
-
-# }
+} # }
 ```

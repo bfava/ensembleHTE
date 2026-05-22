@@ -112,7 +112,7 @@ arXiv:2511.04957*.
 ## Examples
 
 ``` r
-# \donttest{
+if (FALSE) { # \dontrun{
 data(microcredit)
 covars <- c("age", "gender", "education", "hhinc_yrly_base",
             "css_creditscorefinal")
@@ -125,24 +125,5 @@ fit <- ensemble_pred(
 )
 result <- blp_pred(fit)
 print(result)
-#> BLP Results (Best Linear Predictor - Prediction)
-#> =================================================
-#> 
-#> Fit type: Prediction (ensemble_pred)
-#> Outcome analyzed: bank_profits_pp
-#> Observations used: 650
-#> Repetitions: 3
-#> 
-#> Coefficients:
-#>   intercept: Regression intercept (0 = well-calibrated)
-#>   beta: Prediction loading (1 = well-calibrated)
-#> 
-#>         Term    Estimate   Std.Error   t value    Pr(>|t|)
-#>   ----------------------------------------------------
-#>    intercept       -0.00        0.60     -0.01       0.995 
-#>         beta        0.98        0.07     13.63       0.000 ***
-#> 
-#> ---
-#> Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-# }
+} # }
 ```

@@ -60,6 +60,7 @@ were randomly assigned to receive a loan offer or not. A follow-up
 survey measured outcomes 11–22 months later.
 
 ``` r
+
 library(ensembleHTE)
 data(microcredit)
 
@@ -69,25 +70,26 @@ dim(microcredit)
 
 Key variables for our analysis:
 
-| Variable               | Description                                               |
-|------------------------|-----------------------------------------------------------|
-| `treat`                | Treatment indicator (1 = loan offered)                    |
-| `prop_score`           | Known propensity score (varies by credit-score window)    |
-| `exp_yrly_end`         | Yearly business expenses at endline (pesos)               |
-| `hhinc_yrly_end`       | Yearly household income at endline (pesos)                |
-| `bank_profits_pp`      | Bank profit per peso lent (only meaningful for borrowers) |
-| `loan_size`            | Loan amount (0 if no loan taken)                          |
-| `css_creditscorefinal` | Credit score at application                               |
-| `lower_window`         | Indicator for the lower credit-score window               |
-| `own_anybus`           | Owns any business (1 = yes)                               |
-| `max_yearsinbusiness`  | Maximum years in business                                 |
-| `css_assetvalue`       | Business asset value at application                       |
+| Variable | Description |
+|----|----|
+| `treat` | Treatment indicator (1 = loan offered) |
+| `prop_score` | Known propensity score (varies by credit-score window) |
+| `exp_yrly_end` | Yearly business expenses at endline (pesos) |
+| `hhinc_yrly_end` | Yearly household income at endline (pesos) |
+| `bank_profits_pp` | Bank profit per peso lent (only meaningful for borrowers) |
+| `loan_size` | Loan amount (0 if no loan taken) |
+| `css_creditscorefinal` | Credit score at application |
+| `lower_window` | Indicator for the lower credit-score window |
+| `own_anybus` | Owns any business (1 = yes) |
+| `max_yearsinbusiness` | Maximum years in business |
+| `css_assetvalue` | Business asset value at application |
 
 Because treatment was randomized within credit-score windows, the
 propensity score varies across individuals and is provided in the data.
 We pass it explicitly to every function that needs it.
 
 ``` r
+
 # Treatment shares
 table(microcredit$treat)
 #> 
@@ -115,6 +117,7 @@ uses a broader set of covariates (available as the
 `microcredit_covariates` object in the package).
 
 ``` r
+
 hte_covars <- c(
   "css_creditscorefinal",   # credit score
   "lower_window",           # lower credit-score window indicator
@@ -137,6 +140,7 @@ The example below uses `M = 10` repetitions and two algorithms: OLS
 specification at the end of this section.
 
 ``` r
+
 set.seed(2026)
 
 fit_hte <- ensemble_hte(
@@ -155,6 +159,7 @@ The [`print()`](https://rdrr.io/r/base/print.html) method confirms the
 specification:
 
 ``` r
+
 print(fit_hte)
 #> Ensemble HTE Fit
 #> ================
@@ -189,6 +194,7 @@ And [`summary()`](https://rdrr.io/r/base/summary.html) gives a first
 overview of the results:
 
 ``` r
+
 summary(fit_hte)
 #> Ensemble HTE Summary
 #> ====================
@@ -243,6 +249,7 @@ The **Best Linear Predictor (BLP)** asks two questions:
   affected differently.
 
 ``` r
+
 blp_res <- blp(fit_hte)
 print(blp_res)
 #> BLP Results (Best Linear Predictor of CATE)
@@ -266,6 +273,7 @@ print(blp_res)
 ```
 
 ``` r
+
 plot(blp_res)
 ```
 
@@ -289,6 +297,7 @@ truly affects people differently, these group-level effects should vary
 systematically.
 
 ``` r
+
 gates_res <- gates(fit_hte, n_groups = 3)
 print(gates_res)
 #> GATES Results
@@ -319,6 +328,7 @@ print(gates_res)
 ```
 
 ``` r
+
 plot(gates_res)
 ```
 
@@ -349,6 +359,7 @@ computing the average of each covariate within the GATES groups and
 testing whether those averages differ between the top and bottom groups.
 
 ``` r
+
 clan_res <- clan(fit_hte, n_groups = 3)
 print(clan_res)
 #> CLAN Results (Classification Analysis)
@@ -389,6 +400,7 @@ print(clan_res)
 ```
 
 ``` r
+
 plot(clan_res)
 ```
 
@@ -427,6 +439,7 @@ inference, and more algorithms give the ensemble a wider range of
 modeling strategies to draw from.
 
 ``` r
+
 fit_hte <- ensemble_hte(
   Y = "exp_yrly_end",
   D = "treat",
@@ -478,6 +491,7 @@ rank *all* applicants by predicted profitability, not just those who
 happened to get a loan.
 
 ``` r
+
 # Who has observable bank profits?
 has_loan <- microcredit$treat == 1 & microcredit$loan_size > 0
 sum(has_loan)
@@ -494,6 +508,7 @@ this is a small selection for illustration; the original paper uses a
 richer specification.
 
 ``` r
+
 profit_covars <- c(
   "css_creditscorefinal",   # credit score
   "lower_window",           # credit-score window
@@ -511,6 +526,7 @@ profit_covars <- c(
 ### Fitting the ensemble
 
 ``` r
+
 set.seed(2026)
 
 fit_pred <- ensemble_pred(
@@ -530,6 +546,7 @@ using `M >= 100` repetitions and a richer set of algorithms (`grf`,
 `glmnet`, `nnet`, `xgboost`) is recommended for real applications.
 
 ``` r
+
 print(fit_pred)
 #> Ensemble Prediction Fit
 #> =======================
@@ -559,6 +576,7 @@ print(fit_pred)
 ```
 
 ``` r
+
 summary(fit_pred)
 #> Ensemble Prediction Summary
 #> ===========================
@@ -625,6 +643,7 @@ the observed outcome on the ML predictions and tests two things:
   one-unit increase in actual profit.
 
 ``` r
+
 blp_pred_res <- blp_pred(fit_pred)
 print(blp_pred_res)
 #> BLP Results (Best Linear Predictor - Prediction)
@@ -664,6 +683,7 @@ loan, [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md)
 automatically restricts the analysis to those observations:
 
 ``` r
+
 gavs_res <- gavs(fit_pred, n_groups = 3)
 print(gavs_res)
 #> GAVS Results (Group Averages)
@@ -698,6 +718,7 @@ print(gavs_res)
 ```
 
 ``` r
+
 plot(gavs_res)
 ```
 
@@ -731,6 +752,7 @@ estimate treatment effects on a different outcome than the one the model
 was trained on:
 
 ``` r
+
 gates_hhinc <- gates(
   fit_pred,
   outcome    = "hhinc_yrly_end",
@@ -773,6 +795,7 @@ print(gates_hhinc)
 ```
 
 ``` r
+
 plot(gates_hhinc)
 ```
 
@@ -809,6 +832,7 @@ estimates given the available sample.
 ### Who is in each profit group? CLAN
 
 ``` r
+
 clan_pred <- clan(fit_pred, n_groups = 3, variables = profit_covars)
 print(clan_pred)
 #> CLAN Results (Classification Analysis)
@@ -874,6 +898,7 @@ print(clan_pred)
 ```
 
 ``` r
+
 plot(clan_pred)
 ```
 
@@ -953,6 +978,7 @@ percentiles of `hhinc_yrly_base` and labeling each observation Q1
 (lowest income) through Q5 (highest income):
 
 ``` r
+
 hhinc_quintile <- cut(
   microcredit$hhinc_yrly_base,
   breaks  = quantile(microcredit$hhinc_yrly_base, probs = seq(0, 1, by = 0.2)),
@@ -972,6 +998,7 @@ We compare average observed bank profits across terciles under both
 strategies:
 
 ``` r
+
 gavs_r <- gavs_restricted(
   fit_pred,
   restrict_by = hhinc_quintile,
@@ -1031,6 +1058,7 @@ print(gavs_r)
 ```
 
 ``` r
+
 plot(gavs_r)
 ```
 
@@ -1064,6 +1092,7 @@ the welfare consequences of profit-based targeting change under the
 equity constraint?
 
 ``` r
+
 gates_r <- gates_restricted(
   fit_pred,
   restrict_by = hhinc_quintile,
@@ -1128,6 +1157,7 @@ print(gates_r)
 ```
 
 ``` r
+
 plot(gates_r)
 ```
 
@@ -1161,11 +1191,11 @@ sorting.
 
 ## Summary
 
-| Exercise   | Question                                                       | Key functions                                                                                                                                                                                                                                                                                                                                |
-|------------|----------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Part 1** | Do microloans affect all borrowers equally?                    | [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md) → [`blp()`](https://bfava.com/ensembleHTE/reference/blp.md), [`gates()`](https://bfava.com/ensembleHTE/reference/gates.md), [`clan()`](https://bfava.com/ensembleHTE/reference/clan.md)                                                                          |
+| Exercise | Question | Key functions |
+|----|----|----|
+| **Part 1** | Do microloans affect all borrowers equally? | [`ensemble_hte()`](https://bfava.com/ensembleHTE/reference/ensemble_hte.md) → [`blp()`](https://bfava.com/ensembleHTE/reference/blp.md), [`gates()`](https://bfava.com/ensembleHTE/reference/gates.md), [`clan()`](https://bfava.com/ensembleHTE/reference/clan.md) |
 | **Part 2** | Is there a tradeoff between bank profits and borrower welfare? | [`ensemble_pred()`](https://bfava.com/ensembleHTE/reference/ensemble_pred.md) → [`blp_pred()`](https://bfava.com/ensembleHTE/reference/blp_pred.md), [`gavs()`](https://bfava.com/ensembleHTE/reference/gavs.md), [`gates()`](https://bfava.com/ensembleHTE/reference/gates.md), [`clan()`](https://bfava.com/ensembleHTE/reference/clan.md) |
-| **Part 3** | What happens if the lender must maintain income balance?       | [`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md), [`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md)                                                                                                                                                                       |
+| **Part 3** | What happens if the lender must maintain income balance? | [`gavs_restricted()`](https://bfava.com/ensembleHTE/reference/gavs_restricted.md), [`gates_restricted()`](https://bfava.com/ensembleHTE/reference/gates_restricted.md) |
 
 A few things worth remembering:
 

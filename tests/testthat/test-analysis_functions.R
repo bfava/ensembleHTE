@@ -375,6 +375,48 @@ test_that("gates_restricted plot method works", {
   expect_s3_class(p, "ggplot")
 })
 
+test_that("gates_restricted baseline_as_control = NULL inherits stored baseline", {
+  skip_on_cran()
+
+  data <- create_test_data(n = 200)
+  fit  <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = data,
+                       M = 2, K = 3, algorithms = "lm", metalearner = "t",
+                       store_baseline = "ensemble")
+
+  res <- gates_restricted(fit, restrict_by = "X1_group", n_groups = 3)
+  expect_true(res$baseline_as_control)
+  expect_s3_class(res, "gates_restricted_results")
+})
+
+test_that("gates_restricted baseline_as_control = FALSE suppresses baseline", {
+  skip_on_cran()
+
+  data <- create_test_data(n = 200)
+  fit  <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = data,
+                       M = 2, K = 3, algorithms = "lm", metalearner = "t",
+                       store_baseline = "ensemble")
+
+  res <- gates_restricted(fit, restrict_by = "X1_group", n_groups = 3,
+                          baseline_as_control = FALSE)
+  expect_false(res$baseline_as_control)
+  expect_s3_class(res, "gates_restricted_results")
+})
+
+test_that("gates_restricted baseline_as_control = TRUE errors when none stored", {
+  skip_on_cran()
+
+  data <- create_test_data(n = 200)
+  fit  <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = data,
+                       M = 2, K = 3, algorithms = "lm", metalearner = "t",
+                       store_baseline = "none")
+
+  expect_error(
+    gates_restricted(fit, restrict_by = "X1_group", n_groups = 3,
+                     baseline_as_control = TRUE),
+    "no baseline was stored"
+  )
+})
+
 
 # ==============================================================================
 # Tests for gavs_restricted()
@@ -1021,4 +1063,129 @@ test_that("no small cell warning when cells are adequate", {
   expect_no_warning(gates(fit, n_groups = 3))
   expect_no_warning(gavs(fit, n_groups = 3))
   expect_no_warning(clan(fit, variables = c("X1", "X2"), n_groups = 3))
+})
+
+
+# ---- baseline_as_control tests -----------------------------------------------
+
+test_that("blp baseline_as_control = NULL inherits stored baseline (ensemble mode)", {
+  skip_on_cran()
+
+  data <- create_test_data(n = 200)
+  fit  <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = data,
+                       M = 2, K = 3, algorithms = "lm", metalearner = "t",
+                       store_baseline = "ensemble")
+
+  res <- blp(fit)
+  expect_true(res$baseline_as_control)
+  # The extra "baseline" column should influence the regression; just verify it ran
+  expect_s3_class(res, "blp_results")
+})
+
+test_that("blp baseline_as_control = NULL is FALSE when store_baseline = 'none'", {
+  skip_on_cran()
+
+  data <- create_test_data(n = 200)
+  fit  <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = data,
+                       M = 2, K = 3, algorithms = "lm", metalearner = "t",
+                       store_baseline = "none")
+
+  res <- blp(fit)
+  expect_false(res$baseline_as_control)
+  expect_s3_class(res, "blp_results")
+})
+
+test_that("blp baseline_as_control = FALSE suppresses baseline even when stored", {
+  skip_on_cran()
+
+  data <- create_test_data(n = 200)
+  fit  <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = data,
+                       M = 2, K = 3, algorithms = "lm", metalearner = "t",
+                       store_baseline = "ensemble")
+
+  res <- blp(fit, baseline_as_control = FALSE)
+  expect_false(res$baseline_as_control)
+  expect_s3_class(res, "blp_results")
+})
+
+test_that("blp baseline_as_control = TRUE errors when no baseline stored", {
+  skip_on_cran()
+
+  data <- create_test_data(n = 200)
+  fit  <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = data,
+                       M = 2, K = 3, algorithms = "lm", metalearner = "t",
+                       store_baseline = "none")
+
+  expect_error(
+    blp(fit, baseline_as_control = TRUE),
+    "no baseline was stored"
+  )
+})
+
+test_that("blp baseline_as_control works with store_baseline = 'all'", {
+  skip_on_cran()
+
+  data <- create_test_data(n = 200)
+  fit  <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = data,
+                       M = 2, K = 3, algorithms = "lm", metalearner = "t",
+                       store_baseline = "all")
+
+  res <- blp(fit)
+  expect_true(res$baseline_as_control)
+  expect_s3_class(res, "blp_results")
+})
+
+test_that("gates baseline_as_control = NULL inherits stored baseline", {
+  skip_on_cran()
+
+  data <- create_test_data(n = 200)
+  fit  <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = data,
+                       M = 2, K = 3, algorithms = "lm", metalearner = "t",
+                       store_baseline = "ensemble")
+
+  res <- gates(fit, n_groups = 3)
+  expect_true(res$baseline_as_control)
+  expect_s3_class(res, "gates_results")
+})
+
+test_that("gates baseline_as_control = FALSE suppresses baseline even when stored", {
+  skip_on_cran()
+
+  data <- create_test_data(n = 200)
+  fit  <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = data,
+                       M = 2, K = 3, algorithms = "lm", metalearner = "t",
+                       store_baseline = "ensemble")
+
+  res <- gates(fit, n_groups = 3, baseline_as_control = FALSE)
+  expect_false(res$baseline_as_control)
+  expect_s3_class(res, "gates_results")
+})
+
+test_that("gates baseline_as_control = TRUE errors when no baseline stored", {
+  skip_on_cran()
+
+  data <- create_test_data(n = 200)
+  fit  <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = data,
+                       M = 2, K = 3, algorithms = "lm", metalearner = "t",
+                       store_baseline = "none")
+
+  expect_error(
+    gates(fit, n_groups = 3, baseline_as_control = TRUE),
+    "no baseline was stored"
+  )
+})
+
+test_that("blp baseline_as_control compatible with additional controls arg", {
+  skip_on_cran()
+
+  data <- create_test_data(n = 200)
+  fit  <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = data,
+                       M = 2, K = 3, algorithms = "lm", metalearner = "t",
+                       store_baseline = "ensemble")
+
+  # controls = "X1" plus automatic baseline: should still run cleanly
+  res <- blp(fit, controls = "X1")
+  expect_true(res$baseline_as_control)
+  expect_equal(res$controls, "X1")   # user-supplied controls unchanged in $controls
+  expect_s3_class(res, "blp_results")
 })

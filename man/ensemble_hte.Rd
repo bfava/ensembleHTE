@@ -27,7 +27,8 @@ ensemble_hte(
   train_idx = NULL,
   ensemble_strategy = c("cv", "average"),
   individual_id = NULL,
-  n_cores = 1
+  n_cores = 1,
+  store_baseline = c("ensemble", "none", "all")
 )
 }
 \arguments{
@@ -214,11 +215,42 @@ See \strong{Ensemble Strategy} section for details.}
 Default is 1 (sequential). Set to higher values to parallelize the M repetitions.
 Uses the \code{future} framework, so users can also set up their own parallel
 backend via \code{future::plan()} before calling this function.}
+
+\item{store_baseline}{Character. Controls whether baseline outcome predictions
+are stored in the returned object. Options:
+\describe{
+  \item{\code{"ensemble"} (default)}{Computes an ensembled baseline prediction
+    by fitting a linear regression on the \emph{control} sample
+    (\eqn{D_i = 0}, training observations only),
+    regressing the observed outcome on all per-algorithm baseline predictions:
+    \deqn{Y_i = \alpha + \sum_a \beta_a \hat{b}_{a,i} + \varepsilon_i,
+          \quad i : D_i = 0.}
+    Applied to all observations separately for each of the M repetitions.
+    \code{$baseline} is a data.table with M columns
+    (\code{rep_1}, \ldots, \code{rep_M}), analogous to \code{$ite}.}
+  \item{\code{"all"}}{Stores the raw per-algorithm baseline predictions
+    for every repetition. \code{$baseline} is a 3-dimensional array
+    with dimensions \eqn{n \times A \times M}, where
+    \code{A = length(algorithms)} and \code{M} is the number of repetitions.
+    Dimnames along the second axis are \code{baseline_<algorithm>}; along
+    the third axis \code{rep_1, \ldots, rep_M}.}
+  \item{\code{"none"}}{No baseline predictions are stored (\code{$baseline} is \code{NULL}).}
+}
+The meaning of "baseline" depends on the metalearner:
+\itemize{
+  \item T/S/X-learner: \eqn{\hat{Y}(0)} --- the predicted control potential outcome.
+  \item R-learner: \eqn{\hat{E}[Y|X]} --- the nuisance outcome model prediction
+    (marginal mean, not a counterfactual).
+}}
 }
 \value{
 An object of class \code{ensemble_hte_fit} containing:
 \describe{
   \item{ite}{data.table of ITE predictions with M columns (one per repetition)}
+  \item{baseline}{Baseline predictions (\code{NULL} when \code{store_baseline = "none"}).
+    Shape depends on \code{store_baseline}:
+    \code{"ensemble"} — data.table with M columns (one per repetition);
+    \code{"all"} — 3D array with dimensions \eqn{n \times A \times M}.}
   \item{call}{The matched function call}
   \item{formula}{The formula used (or constructed from Y/X/D)}
   \item{treatment}{Name of the treatment variable}
@@ -320,7 +352,7 @@ ITE estimate per observation. Two strategies are available:
 }
 
 \examples{
-\donttest{
+\dontrun{
 # --- HTE estimation on the Philippine microcredit experiment ---
 # Outcome: household income; Treatment: microloan offer
 data(microcredit)

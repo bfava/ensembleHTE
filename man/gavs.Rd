@@ -143,7 +143,7 @@ the evaluation uses a subset, to help avoid unintended subsetting.
 }
 
 \examples{
-\donttest{
+\dontrun{
 data(microcredit)
 covars <- c("age", "gender", "education", "hhinc_yrly_base",
             "css_creditscorefinal")

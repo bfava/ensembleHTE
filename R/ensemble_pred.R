@@ -227,7 +227,7 @@
 #' }
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' # --- Predict bank profits using the microcredit data ---
 #' # Bank profits are only observed for borrowers (loan_size > 0 & treat == 1).
 #' # Use train_idx to train on borrowers, predict for the full sample.

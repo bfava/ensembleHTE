@@ -25,3 +25,6 @@ inst/doc/
 
 # pkgdown generated site output
 docs/
+
+# Personal todo (not for repo)
+TODO.md

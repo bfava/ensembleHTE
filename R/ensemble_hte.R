@@ -242,10 +242,40 @@
 #'   Default is 1 (sequential). Set to higher values to parallelize the M repetitions.
 #'   Uses the \code{future} framework, so users can also set up their own parallel
 #'   backend via \code{future::plan()} before calling this function.
+#' @param store_baseline Character. Controls whether baseline outcome predictions
+#'   are stored in the returned object. Options:
+#'   \describe{
+#'     \item{\code{"ensemble"} (default)}{Computes an ensembled baseline prediction
+#'       by fitting a linear regression on the \emph{control} sample
+#'       (\eqn{D_i = 0}, training observations only),
+#'       regressing the observed outcome on all per-algorithm baseline predictions:
+#'       \deqn{Y_i = \alpha + \sum_a \beta_a \hat{b}_{a,i} + \varepsilon_i,
+#'             \quad i : D_i = 0.}
+#'       Applied to all observations separately for each of the M repetitions.
+#'       \code{$baseline} is a data.table with M columns
+#'       (\code{rep_1}, \ldots, \code{rep_M}), analogous to \code{$ite}.}
+#'     \item{\code{"all"}}{Stores the raw per-algorithm baseline predictions
+#'       for every repetition. \code{$baseline} is a 3-dimensional array
+#'       with dimensions \eqn{n \times A \times M}, where
+#'       \code{A = length(algorithms)} and \code{M} is the number of repetitions.
+#'       Dimnames along the second axis are \code{baseline_<algorithm>}; along
+#'       the third axis \code{rep_1, \ldots, rep_M}.}
+#'     \item{\code{"none"}}{No baseline predictions are stored (\code{$baseline} is \code{NULL}).}
+#'   }
+#'   The meaning of "baseline" depends on the metalearner:
+#'   \itemize{
+#'     \item T/S/X-learner: \eqn{\hat{Y}(0)} --- the predicted control potential outcome.
+#'     \item R-learner: \eqn{\hat{E}[Y|X]} --- the nuisance outcome model prediction
+#'       (marginal mean, not a counterfactual).
+#'   }
 #'
 #' @return An object of class \code{ensemble_hte_fit} containing:
 #' \describe{
 #'   \item{ite}{data.table of ITE predictions with M columns (one per repetition)}
+#'   \item{baseline}{Baseline predictions (\code{NULL} when \code{store_baseline = "none"}).
+#'     Shape depends on \code{store_baseline}:
+#'     \code{"ensemble"} — data.table with M columns (one per repetition);
+#'     \code{"all"} — 3D array with dimensions \eqn{n \times A \times M}.}
 #'   \item{call}{The matched function call}
 #'   \item{formula}{The formula used (or constructed from Y/X/D)}
 #'   \item{treatment}{Name of the treatment variable}
@@ -272,7 +302,7 @@
 #' }
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' # --- HTE estimation on the Philippine microcredit experiment ---
 #' # Outcome: household income; Treatment: microloan offer
 #' data(microcredit)
@@ -402,7 +432,8 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
                          train_idx = NULL,
                          ensemble_strategy = c("cv", "average"),
                          individual_id = NULL,
-                         n_cores = 1) {
+                         n_cores = 1,
+                         store_baseline = c("ensemble", "none", "all")) {
   
   # Capture the call
   cl <- match.call()
@@ -412,6 +443,9 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
   
   # Validate ensemble_strategy
   ensemble_strategy <- match.arg(ensemble_strategy)
+  
+  # Validate store_baseline
+  store_baseline <- match.arg(store_baseline)
   
   # Validate common inputs
   algorithms <- validate_common_inputs(M, K, algorithms, ensemble_folds, n_cores)
@@ -843,14 +877,14 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
                          cluster_id = individual_id_vec)
 
   # Train learners and compute ensemble predictions
-  ite_cols <- paste0("ite_", algorithms)
-  y0_cols <- paste0("y0_", algorithms)
+  ite_cols      <- paste0("ite_", algorithms)
+  baseline_cols <- paste0("baseline_", algorithms)
   
   # Define function to process a single repetition
   process_repetition <- function(m) {
     # Temporary storage for this repetition
     predictions_m <- data.frame(matrix(NA_real_, nrow = n, ncol = 2 * length(algorithms)))
-    colnames(predictions_m) <- c(ite_cols, y0_cols)
+    colnames(predictions_m) <- c(ite_cols, baseline_cols)
     
     for (k in 1:K) {
       # Test fold: all observations in fold k
@@ -873,8 +907,8 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
           test_idx = test_fold_logical,
           learner_params = algo_params
         )
-        predictions_m[test_fold_idx, paste0("ite_", algorithm)] <- result$predicted_ite
-        predictions_m[test_fold_idx, paste0("y0_", algorithm)] <- result$predicted_y0
+        predictions_m[test_fold_idx, paste0("ite_", algorithm)]      <- result$predicted_ite
+        predictions_m[test_fold_idx, paste0("baseline_", algorithm)] <- result$predicted_baseline
       }
     }
     
@@ -882,10 +916,8 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
     if (ensemble_strategy == "average") {
       # Simple unweighted average of ITE predictions across algorithms
       ite_rep <- rowMeans(predictions_m[, ite_cols, drop = FALSE], na.rm = TRUE)
-      return(ite_rep)
-    }
-    
-    # Cross-validated BLP ensemble (default "cv" strategy)
+    } else if (ensemble_strategy == "cv") {
+    # Cross-validated BLP ensemble
     ens_splits <- create_folds(n, M = 1, K = ensemble_folds, stratify_var = splits[[m]])[[1]]
     dt_ens <- data.table(
       Y = Y, 
@@ -923,17 +955,10 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
     if (length(valid_w2_cols) == 0) {
       warning("All algorithms produced constant predictions. Using simple average of ITE predictions.")
       ite_rep <- rowMeans(predictions_m[, ite_cols, drop = FALSE], na.rm = TRUE)
-      return(ite_rep)
-    }
-    
-    # Ensemble regression formula
-    # Only include y0_cols if we have valid Y0 predictions (not for R-learner)
-    has_y0 <- !all(is.na(predictions_m[[y0_cols[1]]]))
-    if (has_y0) {
-      formula_ens <- as.formula(paste("Y ~ W1 +", paste(c(valid_w2_cols, y0_cols), collapse = " + ")))
     } else {
-      formula_ens <- as.formula(paste("Y ~ W1 +", paste(valid_w2_cols, collapse = " + ")))
-    }
+    
+    # Ensemble regression formula — always include baseline_cols as controls
+    formula_ens <- as.formula(paste("Y ~ W1 +", paste(c(valid_w2_cols, baseline_cols), collapse = " + ")))
     
     # Cross-validated ensemble predictions
     ite_rep <- rep(NA_real_, n)
@@ -947,8 +972,64 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
       ite_pred_names <- sub("^W2_", "", w2_coef_names)
       ite_rep[test_idx_ens] <- as.matrix(predictions_m[test_idx_ens, ite_pred_names, drop = FALSE]) %*% coefs[w2_coef_names]
     }
+    } # end valid_w2_cols > 0
+    } # end ensemble_strategy == "cv"
     
-    return(ite_rep)
+    # ----- Store baseline if requested -----
+    if (store_baseline == "none") {
+      return(list(ite = ite_rep))
+    }
+    
+    baseline_m_mat <- as.matrix(predictions_m[, baseline_cols, drop = FALSE])
+    
+    if (store_baseline == "all") {
+      # Return the full n×A matrix for this repetition; aggregated into 3D array later
+      return(list(ite = ite_rep, baseline_all = baseline_m_mat))
+    }
+    
+    # store_baseline == "ensemble": mirror the ITE ensemble strategy
+    if (ensemble_strategy == "average") {
+      baseline_ens_rep <- rowMeans(baseline_m_mat, na.rm = TRUE)
+    } else if (ensemble_strategy == "cv") {
+      # Cross-validated OLS ensemble using the same ens_splits as the ITE.
+      # For t/s/x: fit on control training units (baseline = E[Y(0)|X]).
+      # For r:     fit on all training units (baseline = E[Y|X]).
+      baseline_fit_mask <- if (metalearner == "r") train_idx else (D == 0 & train_idx)
+      
+      # Check for zero-variance baseline columns within the relevant training set
+      valid_baseline_cols <- character(0)
+      for (col in baseline_cols) {
+        fit_vals <- baseline_m_mat[baseline_fit_mask, col]
+        if (length(fit_vals) < 2 || var(fit_vals) < .Machine$double.eps) {
+          warning(paste0("Baseline predictions have zero variance for '", col,
+                         "'. This algorithm will be excluded from the baseline ensemble."))
+        } else {
+          valid_baseline_cols <- c(valid_baseline_cols, col)
+        }
+      }
+      
+      if (length(valid_baseline_cols) == 0) {
+        warning("All baseline algorithms produced constant predictions. Using simple average.")
+        baseline_ens_rep <- rowMeans(baseline_m_mat, na.rm = TRUE)
+      } else {
+        formula_baseline_ens <- as.formula(paste("Y ~", paste(valid_baseline_cols, collapse = " + ")))
+        dt_baseline_ens        <- as.data.frame(baseline_m_mat)
+        dt_baseline_ens[["Y"]] <- Y
+        
+        baseline_ens_rep <- rep(NA_real_, n)
+        for (ell in 1:ensemble_folds) {
+          fit_ens_idx  <- which(baseline_fit_mask & ens_splits != ell)
+          test_idx_ens <- which(ens_splits == ell)
+          fit_b_ens    <- lm(formula_baseline_ens, data = dt_baseline_ens[fit_ens_idx, ])
+          coefs_b      <- coef(fit_b_ens)[!is.na(coef(fit_b_ens))]
+          valid_b_names <- intersect(names(coefs_b), valid_baseline_cols)
+          baseline_ens_rep[test_idx_ens] <- as.numeric(coefs_b["(Intercept)"]) +
+            as.matrix(baseline_m_mat[test_idx_ens, valid_b_names, drop = FALSE]) %*% coefs_b[valid_b_names]
+        }
+      }
+    }
+    
+    return(list(ite = ite_rep, baseline_ens = as.numeric(baseline_ens_rep)))
   }
   
   # Run repetitions (parallel or sequential)
@@ -970,13 +1051,30 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
   }
   
   # Combine results into matrix
-  ite_blp <- do.call(cbind, results_list)
+  ite_blp <- do.call(cbind, lapply(results_list, `[[`, "ite"))
   colnames(ite_blp) <- paste0("rep_", 1:M)
+  
+  # Aggregate baseline results across repetitions
+  baseline_store <- NULL
+  
+  if (store_baseline == "ensemble") {
+    baseline_ens_blp <- do.call(cbind, lapply(results_list, `[[`, "baseline_ens"))
+    colnames(baseline_ens_blp) <- paste0("rep_", 1:M)
+    baseline_store <- as.data.table(baseline_ens_blp)
+  } else if (store_baseline == "all") {
+    # Build a 3D array: n × A × M
+    baseline_all_list <- lapply(results_list, `[[`, "baseline_all")
+    baseline_all_arr  <- simplify2array(baseline_all_list)   # n × A × M
+    dimnames(baseline_all_arr) <- list(NULL, baseline_cols, paste0("rep_", 1:M))
+    baseline_store <- baseline_all_arr
+  }
 
   # Construct the ensemble_fit object
   structure(
     list(
-      ite = as.data.table(ite_blp),
+      ite             = as.data.table(ite_blp),
+      baseline        = baseline_store,
+      store_baseline  = store_baseline,
       call = cl,
       formula = formula,
       treatment = treatment_var,
@@ -1121,7 +1219,7 @@ print.ensemble_hte_fit <- function(x, ...) {
     cat("  R-learner method:  ", x$r_learner, "\n", sep = "")
   }
   cat("\n")
-  ensemble_strat_desc <- if (x$ensemble_strategy == "average") "simple average" else "cross-validated BLP"
+  ensemble_strat_desc <- if (x$ensemble_strategy == "average") "simple average" else if (x$ensemble_strategy == "cv") "cross-validated BLP" else x$ensemble_strategy
   cat("Split-sample parameters:\n")
   cat("  Repetitions (M):   ", x$M, "\n", sep = "")
   cat("  Folds (K):         ", x$K, "\n", sep = "")
@@ -1133,6 +1231,14 @@ print.ensemble_hte_fit <- function(x, ...) {
   cat("  Hyperparameter tuning: ", tune_status, "\n", sep = "")
   if (!is.null(x$individual_id)) {
     cat("  Standard errors:   cluster-robust (at individual level)\n", sep = "")
+  }
+  if (!is.null(x$store_baseline) && x$store_baseline != "none") {
+    baseline_desc <- switch(x$store_baseline,
+      "ensemble" = "ensembled baseline, data.table n\u00d7M  ($baseline)",
+      "all"      = "per-algorithm baseline, 3D array n\u00d7A\u00d7M  ($baseline; use is.array() to detect)"
+    )
+    cat("\nStored baseline predictions:\n")
+    cat("  Mode: ", baseline_desc, "\n", sep = "")
   }
   invisible(x)
 }

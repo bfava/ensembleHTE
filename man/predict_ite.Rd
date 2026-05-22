@@ -54,7 +54,7 @@ predict for. If \code{NULL} (default), predicts for \code{!train_idx}.}
 specific mlr3 learner (e.g., \code{list(num.trees = 500)} for ranger).}
 }
 \value{
-List with predicted_y0, predicted_y1, and predicted_ite
+List with predicted_baseline, predicted_y1, and predicted_ite
 }
 \description{
 Internal function that predicts individual treatment effects (ITEs) using

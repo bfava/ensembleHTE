@@ -9,10 +9,15 @@
 ^data-raw$
 ^\.github$
 ^\.gitignore$
+^\.vscode$
+^AGENTS\.md$
+^TODO\.md$
 ^LICENSE$
 ^ensembleHTE-complete-guide\.html$
 ^Rplots\.pdf$
 ^build\.log$
+^.*\.Rcheck$
+^.*\.tar\.gz$
 ^vignettes/articles/.*_cache$
 ^vignettes/articles/.*_files$
 ^vignettes/articles/.*-backup.*$

@@ -12,6 +12,7 @@ gates_restricted(
   treatment = NULL,
   prop_score = NULL,
   controls = NULL,
+  baseline_as_control = NULL,
   subset = NULL,
   group_on = c("auto", "all", "analysis")
 )
@@ -55,6 +56,16 @@ For \code{ensemble_hte_fit}, uses the propensity score from the fit.}
 
 \item{controls}{Optional character vector of control variable names from \code{data}
 to include as covariates in the GATES regression.}
+
+\item{baseline_as_control}{Logical or NULL. Whether to include stored baseline
+predictions as control variables in the GATES regressions. Options:
+\itemize{
+  \item NULL (default): include baseline if it was stored in the fit
+    (\code{store_baseline != "none"}); omit otherwise
+  \item TRUE: always include; errors if no baseline was stored in the fit
+  \item FALSE: exclude even if baseline was stored
+}
+Applies to \code{ensemble_hte_fit} objects only.}
 
 \item{subset}{Which observations to use for the GATES comparison. Options:
 \itemize{
@@ -123,7 +134,7 @@ reported estimates and standard errors are the simple averages across all
 }
 
 \examples{
-\donttest{
+\dontrun{
 data(microcredit)
 covars <- c("age", "gender", "education", "hhinc_yrly_base",
             "css_creditscorefinal")

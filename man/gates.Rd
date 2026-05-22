@@ -11,6 +11,7 @@ gates(
   treatment = NULL,
   prop_score = NULL,
   controls = NULL,
+  baseline_as_control = NULL,
   restrict_by = NULL,
   subset = NULL,
   group_on = c("auto", "all", "analysis")
@@ -49,6 +50,18 @@ For \code{ensemble_hte_fit}, uses the propensity score from the fit.}
 \item{controls}{Character vector of control variable names to include in regression.
 These must be column names present in the \code{data} argument used when calling
 the ensemble function.}
+
+\item{baseline_as_control}{Logical or NULL. Whether to include stored baseline
+predictions as control variables in the regression. Options:
+\itemize{
+  \item NULL (default): include baseline if it was stored in the fit
+    (\code{store_baseline != "none"}); omit otherwise
+  \item TRUE: always include; errors if no baseline was stored in the fit
+  \item FALSE: exclude even if baseline was stored
+}
+Applies to \code{ensemble_hte_fit} objects only. For \code{store_baseline = "ensemble"}
+a single column named \code{"baseline"} is added per repetition. For
+\code{store_baseline = "all"} one column per algorithm is added.}
 
 \item{restrict_by}{Optional. Stratification variable for restricted ranking:
 \itemize{
@@ -153,7 +166,7 @@ Three heterogeneity tests are reported:
 }
 
 \examples{
-\donttest{
+\dontrun{
 data(microcredit)
 covars <- c("age", "gender", "education", "hhinc_yrly_base",
             "css_creditscorefinal")

@@ -409,7 +409,7 @@
 #' }
 #' 
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' data(microcredit)
 #' covars <- c("age", "gender", "education", "hhinc_yrly_base",
 #'             "css_creditscorefinal")
@@ -1020,6 +1020,15 @@ plot.gavs_restricted_results <- function(x, alpha = 0.05, ...) {
 #'   For \code{ensemble_hte_fit}, uses the propensity score from the fit.
 #' @param controls Optional character vector of control variable names from \code{data}
 #'   to include as covariates in the GATES regression.
+#' @param baseline_as_control Logical or NULL. Whether to include stored baseline
+#'   predictions as control variables in the GATES regressions. Options:
+#'   \itemize{
+#'     \item NULL (default): include baseline if it was stored in the fit
+#'       (\code{store_baseline != "none"}); omit otherwise
+#'     \item TRUE: always include; errors if no baseline was stored in the fit
+#'     \item FALSE: exclude even if baseline was stored
+#'   }
+#'   Applies to \code{ensemble_hte_fit} objects only.
 #' @param group_on Character controlling which observations define the quantile
 #'   cutoffs used to form groups. One of \code{"auto"} (default),
 #'   \code{"all"}, or \code{"analysis"}.
@@ -1056,7 +1065,7 @@ plot.gavs_restricted_results <- function(x, alpha = 0.05, ...) {
 #' }
 #' 
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' data(microcredit)
 #' covars <- c("age", "gender", "education", "hhinc_yrly_base",
 #'             "css_creditscorefinal")
@@ -1076,7 +1085,8 @@ plot.gavs_restricted_results <- function(x, alpha = 0.05, ...) {
 #' 
 #' @export
 gates_restricted <- function(ensemble_fit, restrict_by, n_groups = 3, outcome = NULL, 
-                          treatment = NULL, prop_score = NULL, controls = NULL, 
+                          treatment = NULL, prop_score = NULL, controls = NULL,
+                          baseline_as_control = NULL,
                           subset = NULL, group_on = c("auto", "all", "analysis")) {
   
   group_on <- match.arg(group_on)
@@ -1276,7 +1286,7 @@ gates_restricted <- function(ensemble_fit, restrict_by, n_groups = 3, outcome = 
   # Print subset message
   .print_subset_message("GATES Comparison", n, n_fit, n_used, fit_type, has_train_idx)
   
-  # Get controls data if specified (subset to used observations)
+  # Get controls data if specified
   if (!is.null(controls)) {
     if (!is.character(controls)) {
       stop("controls must be a character vector of column names")
@@ -1287,9 +1297,25 @@ gates_restricted <- function(ensemble_fit, restrict_by, n_groups = 3, outcome = 
                   paste(missing_controls, collapse = ", ")))
     }
     control_data_full <- ensemble_fit$data[, ..controls]
-    control_data_full <- ensemble_fit$data[, ..controls]
   } else {
     control_data_full <- NULL
+  }
+
+  # Resolve baseline_as_control
+  has_stored_baseline <- inherits(ensemble_fit, "ensemble_hte_fit") &&
+                         !is.null(ensemble_fit$baseline) &&
+                         !is.null(ensemble_fit$store_baseline) &&
+                         ensemble_fit$store_baseline != "none"
+  if (is.null(baseline_as_control)) {
+    use_baseline <- has_stored_baseline
+  } else if (isTRUE(baseline_as_control)) {
+    if (!has_stored_baseline) {
+      stop("baseline_as_control = TRUE but no baseline was stored in the fit. ",
+           "Re-run ensemble_hte() with store_baseline = \"ensemble\" or \"all\".")
+    }
+    use_baseline <- TRUE
+  } else {
+    use_baseline <- FALSE
   }
   
   # Extract components from ensemble_fit
@@ -1312,6 +1338,13 @@ gates_restricted <- function(ensemble_fit, restrict_by, n_groups = 3, outcome = 
   
   # Compute GATES for each repetition (both unrestricted and restricted)
   results_by_rep <- lapply(1:M, function(m) {
+    eff_controls     <- controls
+    eff_control_data <- control_data_full
+    if (use_baseline) {
+      bl_dt <- .extract_baseline_rep(ensemble_fit$baseline, m, idx = NULL)
+      eff_controls     <- c(eff_controls, names(bl_dt))
+      eff_control_data <- if (is.null(eff_control_data)) bl_dt else cbind(as.data.table(eff_control_data), bl_dt)
+    }
     gates_unrest <- .gates_single(
       Y = Y,
       D = D,
@@ -1320,8 +1353,8 @@ gates_restricted <- function(ensemble_fit, restrict_by, n_groups = 3, outcome = 
       predicted_values = predictions_list[[m]],
       fold = splits[[m]],
       n_groups = n_groups,
-      controls = controls,
-      control_data = control_data_full,
+      controls = eff_controls,
+      control_data = eff_control_data,
       restrict_by = NULL,
       group_ref_idx = group_ref_idx,
       analysis_idx = analysis_idx,
@@ -1335,8 +1368,8 @@ gates_restricted <- function(ensemble_fit, restrict_by, n_groups = 3, outcome = 
       predicted_values = predictions_list[[m]],
       fold = splits[[m]],
       n_groups = n_groups,
-      controls = controls,
-      control_data = control_data_full,
+      controls = eff_controls,
+      control_data = eff_control_data,
       restrict_by = strata_vec,
       group_ref_idx = group_ref_idx,
       analysis_idx = analysis_idx,
@@ -1440,6 +1473,7 @@ gates_restricted <- function(ensemble_fit, restrict_by, n_groups = 3, outcome = 
       targeted_outcome = targeted_outcome,
       fit_type = fit_type,
       controls = controls,
+      baseline_as_control = use_baseline,
       n_used = n_used,
       M = M
     ),
@@ -1458,6 +1492,7 @@ gates_restricted <- function(ensemble_fit, restrict_by, n_groups = 3, outcome = 
       targeted_outcome = targeted_outcome,
       fit_type = fit_type,
       controls = controls,
+      baseline_as_control = use_baseline,
       n_used = n_used,
       M = M
     ),
@@ -1480,6 +1515,7 @@ gates_restricted <- function(ensemble_fit, restrict_by, n_groups = 3, outcome = 
       targeted_outcome = targeted_outcome,
       fit_type = fit_type,
       controls = controls,
+      baseline_as_control = use_baseline,
       n_used = n_used,
       M = M,
       group_on = group_on,

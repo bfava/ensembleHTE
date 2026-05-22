@@ -333,7 +333,7 @@ predict_newdata.grf_wrapper <- function(object, newdata) {
 #' @param learner_params Optional named list of parameter-value pairs for this
 #'   specific mlr3 learner (e.g., \code{list(num.trees = 500)} for ranger).
 #' 
-#' @return List with predicted_y0, predicted_y1, and predicted_ite
+#' @return List with predicted_baseline, predicted_y1, and predicted_ite
 #' 
 #' @keywords internal
 predict_ite <- function(Y, X, D, prop_score, W, train_idx, algorithm, 
@@ -381,16 +381,16 @@ predict_ite <- function(Y, X, D, prop_score, W, train_idx, algorithm,
   if (metalearner == "t") {
     model0 <- fit_model(Y_train0, X_train0, algorithm, task_type, tune, tune_params, learner_params = learner_params)
     model1 <- fit_model(Y_train1, X_train1, algorithm, task_type, tune, tune_params, learner_params = learner_params)
-    predicted_y0 <- .predict_model(model0, X_test)$response
-    predicted_y1 <- .predict_model(model1, X_test)$response
-    predicted_ite <- predicted_y1 - predicted_y0
+    predicted_baseline <- .predict_model(model0, X_test)$response
+    predicted_y1      <- .predict_model(model1, X_test)$response
+    predicted_ite     <- predicted_y1 - predicted_baseline
 
   } else if (metalearner == "s") {
     X_train_s <- cbind(X_train, D = D_train)
     model <- fit_model(Y_train, X_train_s, algorithm, task_type, tune, tune_params, learner_params = learner_params)
-    predicted_y0 <- .predict_model(model, cbind(X_test, D = 0))$response
-    predicted_y1 <- .predict_model(model, cbind(X_test, D = 1))$response
-    predicted_ite <- predicted_y1 - predicted_y0
+    predicted_baseline <- .predict_model(model, cbind(X_test, D = 0))$response
+    predicted_y1      <- .predict_model(model, cbind(X_test, D = 1))$response
+    predicted_ite     <- predicted_y1 - predicted_baseline
     
   } else if (metalearner == "x") {
     # Step 1: Fit base learners
@@ -406,10 +406,10 @@ predict_ite <- function(Y, X, D, prop_score, W, train_idx, algorithm,
     model_tau1 <- fit_model(tau_train1, X_train1, algorithm, "regr", tune, tune_params, learner_params = learner_params)
     
     # Step 4: Combine predictions using propensity score
-    prop_test <- prop_score[test_idx]
-    predicted_y0 <- .predict_model(model0, X_test)$response
-    predicted_y1 <- .predict_model(model1, X_test)$response
-    predicted_ite <- prop_test * .predict_model(model_tau0, X_test)$response + 
+    prop_test         <- prop_score[test_idx]
+    predicted_baseline <- .predict_model(model0, X_test)$response
+    predicted_y1      <- .predict_model(model1, X_test)$response
+    predicted_ite     <- prop_test * .predict_model(model_tau0, X_test)$response + 
       (1 - prop_test) * .predict_model(model_tau1, X_test)$response
     
   } else if (metalearner == "r") {
@@ -448,14 +448,16 @@ predict_ite <- function(Y, X, D, prop_score, W, train_idx, algorithm,
       predicted_ite <- .predict_model(model_tau, X_test)$response
     }
     
-    # R-learner doesn't naturally produce y0/y1 predictions
-    predicted_y0 <- NA
+    # R-learner baseline: use E[Y|X] directly (the nuisance outcome model).
+    # This is not Y(0) per se but the marginal mean prediction, which serves
+    # as a generic baseline predictor.
+    predicted_baseline <- .predict_model(model_y, X_test)$response
     predicted_y1 <- NA
   }
   
   list(
-    predicted_y0 = predicted_y0, 
-    predicted_y1 = predicted_y1, 
-    predicted_ite = predicted_ite
+    predicted_baseline = predicted_baseline,
+    predicted_y1       = predicted_y1,
+    predicted_ite      = predicted_ite
   )
 }

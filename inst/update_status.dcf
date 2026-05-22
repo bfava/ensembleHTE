@@ -1,3 +1,7 @@
+Version: 0.2.0
+Status: recommended
+Message: Baseline controls for BLP/GATES regressions improve power.
+
 Version: 0.1.1
 Status: recommended
 Message: New covariates interface and improved error messages.

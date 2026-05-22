@@ -1,3 +1,22 @@
+# ensembleHTE 0.2.0
+
+## New features
+
+* `ensemble_hte()` gains a `store_baseline` argument that controls whether
+  predicted baseline outcomes are stored in the returned object.
+  `"ensemble"` (default) stores an ensembled E[Y(0)|X] (T/S/X-learner) or
+  E[Y|X] (R-learner) as a data.table with one column per repetition;
+  `"all"` stores the full per-algorithm prediction array (n x A x M);
+  `"none"` skips storage.
+* `blp()`, `gates()`, and `gates_restricted()` gain a `baseline_as_control`
+  argument. When `NULL` (default), the stored baseline is automatically
+  included as a regression control if available. Including the predicted
+  baseline absorbs residual outcome variance not attributable to the
+  treatment, reducing standard errors in the BLP/GATES regressions and
+  improving statistical power for detecting treatment effect heterogeneity.
+  Set to `FALSE` to omit even if stored, or `TRUE` to require it (errors
+  if no baseline was stored in the fit).
+
 # ensembleHTE 0.1.1
 
 ## New features

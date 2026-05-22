@@ -238,3 +238,117 @@ test_that("ensemble_hte uses provided prop_score", {
   
   expect_equal(fit$prop_score, ps)
 })
+
+# ---- store_baseline tests ----
+
+# Shared fixture for store_baseline tests
+make_baseline_data <- function(n = 250, seed = 42) {
+  set.seed(seed)
+  X1 <- rnorm(n); X2 <- rnorm(n)
+  D  <- rbinom(n, 1, 0.5)
+  Y  <- 0.5 * X1 + D * (1 + 0.5 * X1) + rnorm(n, sd = 0.5)
+  list(data = data.frame(Y = Y, D = D, X1 = X1, X2 = X2), n = n)
+}
+
+test_that("store_baseline = 'none' gives NULL baseline", {
+  skip_on_cran()
+  d <- make_baseline_data()
+  fit <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = d$data,
+                      M = 2, K = 2, algorithms = c("lm"), metalearner = "t",
+                      store_baseline = "none")
+  expect_null(fit$baseline)
+  expect_equal(fit$store_baseline, "none")
+})
+
+test_that("store_baseline = 'ensemble' (default) gives data.table n x M", {
+  skip_on_cran()
+  d <- make_baseline_data()
+  fit <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = d$data,
+                      M = 2, K = 2, algorithms = c("lm"), metalearner = "t")
+  expect_equal(fit$store_baseline, "ensemble")
+  expect_s3_class(fit$baseline, "data.table")
+  expect_equal(dim(fit$baseline), c(d$n, 2L))  # n x M
+  expect_false(anyNA(fit$baseline))
+  expect_equal(names(fit$baseline), c("rep_1", "rep_2"))
+})
+
+test_that("store_baseline = 'all' gives 3D array n x A x M", {
+  skip_on_cran()
+  d  <- make_baseline_data()
+  A  <- 2L  # two algorithms
+  M  <- 2L
+  fit <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = d$data,
+                      M = M, K = 2, algorithms = c("lm", "grf"), metalearner = "t",
+                      store_baseline = "all")
+  expect_true(is.array(fit$baseline))
+  expect_equal(dim(fit$baseline), c(d$n, A, M))
+  expect_equal(dimnames(fit$baseline)[[2]], c("baseline_lm", "baseline_grf"))
+  expect_equal(dimnames(fit$baseline)[[3]], c("rep_1", "rep_2"))
+  expect_false(anyNA(fit$baseline))
+  # Confirm no old $baseline_all field
+  expect_null(fit$baseline_all)
+})
+
+test_that("is.array() distinguishes 'all' from 'ensemble' baseline", {
+  skip_on_cran()
+  d   <- make_baseline_data()
+  f_ens <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = d$data,
+                        M = 2, K = 2, algorithms = c("lm"), metalearner = "t",
+                        store_baseline = "ensemble")
+  f_all <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = d$data,
+                        M = 2, K = 2, algorithms = c("lm"), metalearner = "t",
+                        store_baseline = "all")
+  expect_false(is.array(f_ens$baseline))
+  expect_true(is.array(f_all$baseline))
+})
+
+test_that("ensemble_strategy = 'average' gives rowMeans baseline", {
+  skip_on_cran()
+  d <- make_baseline_data()
+  fit <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = d$data,
+                      M = 2, K = 2, algorithms = c("lm", "grf"), metalearner = "t",
+                      ensemble_strategy = "average", store_baseline = "ensemble")
+  expect_s3_class(fit$baseline, "data.table")
+  expect_equal(dim(fit$baseline), c(d$n, 2L))
+  expect_false(anyNA(fit$baseline))
+})
+
+test_that("ensemble_strategy = 'cv' baseline has no NAs and correct shape", {
+  skip_on_cran()
+  d <- make_baseline_data()
+  fit <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = d$data,
+                      M = 2, K = 2, algorithms = c("lm", "grf"), metalearner = "t",
+                      ensemble_strategy = "cv", store_baseline = "ensemble")
+  expect_s3_class(fit$baseline, "data.table")
+  expect_equal(dim(fit$baseline), c(d$n, 2L))
+  expect_false(anyNA(fit$baseline))
+})
+
+test_that("R-learner store_baseline uses all training obs (not control-only)", {
+  skip_on_cran()
+  # Use a large enough sample so the R-learner is stable
+  set.seed(7)
+  n <- 300
+  X1 <- rnorm(n); X2 <- rnorm(n)
+  D  <- rbinom(n, 1, 0.5)
+  Y  <- X1 + D * (1 + X1) + rnorm(n)
+  data <- data.frame(Y = Y, D = D, X1 = X1, X2 = X2)
+  fit <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = data,
+                      M = 2, K = 2, algorithms = c("lm"), metalearner = "r",
+                      r_learner = "lm", store_baseline = "ensemble")
+  # Predictions should cover treated units too — non-NA for all rows
+  expect_false(anyNA(fit$baseline))
+  expect_equal(nrow(fit$baseline), n)
+})
+
+test_that("t-learner store_baseline fits on control units only", {
+  skip_on_cran()
+  d <- make_baseline_data()
+  fit <- ensemble_hte(Y ~ X1 + X2, treatment = D, data = d$data,
+                      M = 2, K = 2, algorithms = c("lm"), metalearner = "t",
+                      store_baseline = "ensemble")
+  # Baseline predictions should exist for all obs (including treated),
+  # even though the ensemble was fitted on control units only
+  expect_equal(nrow(fit$baseline), d$n)
+  expect_false(anyNA(fit$baseline))
+})

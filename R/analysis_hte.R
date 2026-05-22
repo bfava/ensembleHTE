@@ -356,6 +356,17 @@
 #' @param controls Character vector of control variable names to include in regression.
 #'   These must be column names present in the \code{data} argument used when calling
 #'   the ensemble function.
+#' @param baseline_as_control Logical or NULL. Whether to include stored baseline
+#'   predictions as control variables in the regression. Options:
+#'   \itemize{
+#'     \item NULL (default): include baseline if it was stored in the fit
+#'       (\code{store_baseline != "none"}); omit otherwise
+#'     \item TRUE: always include; errors if no baseline was stored in the fit
+#'     \item FALSE: exclude even if baseline was stored
+#'   }
+#'   Applies to \code{ensemble_hte_fit} objects only. For \code{store_baseline = "ensemble"}
+#'   a single column named \code{"baseline"} is added per repetition. For
+#'   \code{store_baseline = "all"} one column per algorithm is added.
 #' @param restrict_by Optional. Stratification variable for restricted ranking:
 #'   \itemize{
 #'     \item NULL (default): unrestricted ranking across full sample within folds
@@ -413,7 +424,7 @@
 #' }
 #' 
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' data(microcredit)
 #' covars <- c("age", "gender", "education", "hhinc_yrly_base",
 #'             "css_creditscorefinal")
@@ -431,7 +442,8 @@
 #'
 #' @export
 gates <- function(ensemble_fit, n_groups = 3, outcome = NULL, treatment = NULL,
-                  prop_score = NULL, controls = NULL, restrict_by = NULL, subset = NULL,
+                  prop_score = NULL, controls = NULL, baseline_as_control = NULL,
+                  restrict_by = NULL, subset = NULL,
                   group_on = c("auto", "all", "analysis")) {
   
   # Match group_on argument
@@ -627,9 +639,23 @@ gates <- function(ensemble_fit, n_groups = 3, outcome = NULL, treatment = NULL,
   splits <- ensemble_fit$splits
   M <- ensemble_fit$M
   
-  # Get control data if controls specified
-  control_data <- if (!is.null(controls)) ensemble_fit$data else NULL
-  
+  # Resolve baseline_as_control
+  has_stored_baseline <- inherits(ensemble_fit, "ensemble_hte_fit") &&
+                         !is.null(ensemble_fit$baseline) &&
+                         !is.null(ensemble_fit$store_baseline) &&
+                         ensemble_fit$store_baseline != "none"
+  if (is.null(baseline_as_control)) {
+    use_baseline <- has_stored_baseline
+  } else if (isTRUE(baseline_as_control)) {
+    if (!has_stored_baseline) {
+      stop("baseline_as_control = TRUE but no baseline was stored in the fit. ",
+           "Re-run ensemble_hte() with store_baseline = \"ensemble\" or \"all\".")
+    }
+    use_baseline <- TRUE
+  } else {
+    use_baseline <- FALSE
+  }
+
   # Resolve which observations define group cutoffs
   group_ref_idx <- .resolve_group_ref_idx(group_on, use_idx, train_idx)
   
@@ -643,6 +669,13 @@ gates <- function(ensemble_fit, n_groups = 3, outcome = NULL, treatment = NULL,
   cluster_id <- ensemble_fit$individual_id
   
   gates_by_rep <- lapply(1:M, function(m) {
+    eff_controls     <- controls
+    eff_control_data <- if (!is.null(controls)) ensemble_fit$data else NULL
+    if (use_baseline) {
+      bl_dt <- .extract_baseline_rep(ensemble_fit$baseline, m, idx = NULL)
+      eff_controls     <- c(eff_controls, names(bl_dt))
+      eff_control_data <- if (is.null(eff_control_data)) bl_dt else cbind(as.data.table(eff_control_data), bl_dt)
+    }
     .gates_single(
       Y = Y,
       D = D,
@@ -652,8 +685,8 @@ gates <- function(ensemble_fit, n_groups = 3, outcome = NULL, treatment = NULL,
       fold = splits[[m]],
       n_groups = n_groups,
       restrict_by = strata_vec,
-      controls = controls,
-      control_data = control_data,
+      controls = eff_controls,
+      control_data = eff_control_data,
       group_ref_idx = group_ref_idx,
       analysis_idx = if (!all(use_idx)) use_idx else NULL,
       cluster_id = cluster_id
@@ -702,6 +735,7 @@ gates <- function(ensemble_fit, n_groups = 3, outcome = NULL, treatment = NULL,
       fit_type = fit_type,
       restrict_by = strata_var,
       controls = controls,
+      baseline_as_control = use_baseline,
       group_on = group_on,
       n = n,
       n_train = n_fit,
@@ -711,6 +745,35 @@ gates <- function(ensemble_fit, n_groups = 3, outcome = NULL, treatment = NULL,
     ),
     class = "gates_results"
   )
+}
+
+
+#' Extract baseline predictions for one repetition as a data.table
+#'
+#' @param baseline The \code{$baseline} field of an \code{ensemble_hte_fit}:
+#'   a data.table (\code{store_baseline = "ensemble"}) or 3D array
+#'   (\code{store_baseline = "all"})
+#' @param m Integer repetition index (1-based)
+#' @param idx Optional logical vector of length n to subset rows (NULL = all rows)
+#' @return A data.table. Single column \code{"baseline"} for ensemble mode;
+#'   one column per algorithm for all mode.
+#' @keywords internal
+.extract_baseline_rep <- function(baseline, m, idx = NULL) {
+  if (is.array(baseline)) {
+    # store_baseline == "all": array n x A x M
+    # Use matrix() to preserve 2D shape when A == 1 (R drops dim otherwise)
+    bl_mat <- matrix(baseline[, , m],
+                     nrow = dim(baseline)[1], ncol = dim(baseline)[2],
+                     dimnames = list(NULL, dimnames(baseline)[[2]]))
+    if (!is.null(idx)) bl_mat <- bl_mat[idx, , drop = FALSE]
+    as.data.table(as.data.frame(bl_mat))               # colnames from dimnames
+  } else {
+    # store_baseline == "ensemble": data.table n x M
+    rep_col <- paste0("rep_", m)
+    bl_vec  <- baseline[[rep_col]]
+    if (!is.null(idx)) bl_vec <- bl_vec[idx]
+    data.table(baseline = bl_vec)
+  }
 }
 
 
@@ -859,6 +922,17 @@ gates <- function(ensemble_fit, n_groups = 3, outcome = NULL, treatment = NULL,
 #' @param controls Character vector of control variable names to include in regression.
 #'   These must be column names present in the \code{data} argument used when calling
 #'   the ensemble function.
+#' @param baseline_as_control Logical or NULL. Whether to include stored baseline
+#'   predictions as control variables in the regression. Options:
+#'   \itemize{
+#'     \item NULL (default): include baseline if it was stored in the fit
+#'       (\code{store_baseline != "none"}); omit otherwise
+#'     \item TRUE: always include; errors if no baseline was stored in the fit
+#'     \item FALSE: exclude even if baseline was stored
+#'   }
+#'   Applies to \code{ensemble_hte_fit} objects only. For \code{store_baseline = "ensemble"}
+#'   a single column named \code{"baseline"} is added per repetition. For
+#'   \code{store_baseline = "all"} one column per algorithm is added.
 #' @param subset Which observations to use for the BLP analysis. Options:
 #'   \itemize{
 #'     \item NULL (default): uses all observations (or training obs for \code{ensemble_pred_fit}
@@ -883,7 +957,7 @@ gates <- function(ensemble_fit, n_groups = 3, outcome = NULL, treatment = NULL,
 #' }
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' data(microcredit)
 #' covars <- c("age", "gender", "education", "hhinc_yrly_base",
 #'             "css_creditscorefinal")
@@ -900,7 +974,8 @@ gates <- function(ensemble_fit, n_groups = 3, outcome = NULL, treatment = NULL,
 #'
 #' @export
 blp <- function(ensemble_fit, outcome = NULL, treatment = NULL, 
-                prop_score = NULL, controls = NULL, subset = NULL) {
+                prop_score = NULL, controls = NULL, baseline_as_control = NULL,
+                subset = NULL) {
   
   # Check input type and extract predictions accordingly
   if (inherits(ensemble_fit, "ensemble_hte_fit")) {
@@ -1048,22 +1123,43 @@ blp <- function(ensemble_fit, outcome = NULL, treatment = NULL,
   # Extract components from ensemble_fit
   M <- ensemble_fit$M
   
-  # Get control data if controls specified (subset to used observations)
-  control_data <- if (!is.null(controls)) ensemble_fit$data[use_idx, ] else NULL
-  
   # Extract individual_id for cluster-robust SEs (if panel data)
   cluster_id <- if (!is.null(ensemble_fit$individual_id)) ensemble_fit$individual_id[use_idx] else NULL
-  
+
+  # Resolve baseline_as_control
+  has_stored_baseline <- inherits(ensemble_fit, "ensemble_hte_fit") &&
+                         !is.null(ensemble_fit$baseline) &&
+                         !is.null(ensemble_fit$store_baseline) &&
+                         ensemble_fit$store_baseline != "none"
+  if (is.null(baseline_as_control)) {
+    use_baseline <- has_stored_baseline
+  } else if (isTRUE(baseline_as_control)) {
+    if (!has_stored_baseline) {
+      stop("baseline_as_control = TRUE but no baseline was stored in the fit. ",
+           "Re-run ensemble_hte() with store_baseline = \"ensemble\" or \"all\".")
+    }
+    use_baseline <- TRUE
+  } else {
+    use_baseline <- FALSE
+  }
+
   # Compute BLP for each repetition
   blp_by_rep <- lapply(1:M, function(m) {
+    eff_controls     <- controls
+    eff_control_data <- if (!is.null(controls)) ensemble_fit$data[use_idx, ] else NULL
+    if (use_baseline) {
+      bl_dt <- .extract_baseline_rep(ensemble_fit$baseline, m, idx = use_idx)
+      eff_controls     <- c(eff_controls, names(bl_dt))
+      eff_control_data <- if (is.null(eff_control_data)) bl_dt else cbind(as.data.table(eff_control_data), bl_dt)
+    }
     .blp_single(
       Y = Y[use_idx],
       D = D[use_idx],
       prop_score = ps[use_idx],
       weight = weight[use_idx],
       predicted_ite = predictions_list[[m]][use_idx],
-      controls = controls,
-      control_data = control_data,
+      controls = eff_controls,
+      control_data = eff_control_data,
       cluster_id = cluster_id
     )
   })
@@ -1091,6 +1187,7 @@ blp <- function(ensemble_fit, outcome = NULL, treatment = NULL,
       targeted_outcome = targeted_outcome,
       fit_type = fit_type,
       controls = controls,
+      baseline_as_control = use_baseline,
       n = n,
       n_train = n_fit,
       n_used = n_used,
@@ -1639,7 +1736,7 @@ print.gates_results <- function(x, ...) {
 #' }
 #' 
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' data(microcredit)
 #' covars <- c("age", "gender", "education", "hhinc_yrly_base",
 #'             "css_creditscorefinal")
@@ -2112,7 +2209,7 @@ clan <- function(ensemble_fit, variables = NULL, n_groups = 3, na_rm = FALSE, sc
 #' }
 #' 
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' data(microcredit)
 #' covars <- c("age", "gender", "education", "hhinc_yrly_base",
 #'             "css_creditscorefinal")

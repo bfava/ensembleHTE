@@ -1,3 +1,15 @@
+# ensembleHTE 0.2.1
+
+## Bug fixes
+
+* `blp()` and `blp_pred()` no longer error with "subscript out of bounds"
+  when a fit produces a constant (degenerate) prediction. Previously, a
+  constant fitted CATE made the heterogeneity regressor collinear, so `lm()`
+  dropped it and the hard-coded coefficient lookup failed. The affected
+  coefficient (heterogeneity for `blp()`, slope for `blp_pred()`) now returns
+  `NA` with an informative warning explaining that no heterogeneity (or
+  predictive signal) was detected, rather than failing silently.
+
 # ensembleHTE 0.2.0
 
 ## New features

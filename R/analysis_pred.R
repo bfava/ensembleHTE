@@ -22,11 +22,14 @@
   reg <- reg_from_formula(formula_str, dt_blp, cluster_id = cluster_id)
   coef_blp <- reg$coef
   
-  # Extract estimates and SEs
+  # Extract estimates and SEs, tolerating regressors that lm() dropped due to
+  # collinearity (e.g. a constant predicted_y). Missing terms yield NA rather
+  # than a subscript-out-of-bounds error.
+  row_idx <- match(c("(Intercept)", "predicted_y"), rownames(coef_blp))
   blp_estimates <- data.table(
     term = c("intercept", "beta"),
-    estimate = coef_blp[c("(Intercept)", "predicted_y"), 1],
-    se = coef_blp[c("(Intercept)", "predicted_y"), 2]
+    estimate = coef_blp[row_idx, 1],
+    se = coef_blp[row_idx, 2]
   )
   
   list(
@@ -241,6 +244,23 @@ blp_pred <- function(ensemble_fit, outcome = NULL, subset = NULL) {
   
   # Combine estimates across repetitions
   all_estimates <- rbindlist(lapply(blp_by_rep, `[[`, "estimates"), idcol = "repetition")
+  
+  # Warn (rather than fail silently) when the slope coefficient could not be
+  # estimated in one or more repetitions because the prediction was constant.
+  # A constant predicted_y is collinear with the intercept, so lm() drops it and
+  # beta is NA for those splits.
+  n_degenerate <- all_estimates[term == "beta", sum(is.na(estimate))]
+  if (n_degenerate > 0L) {
+    warning(sprintf(
+      paste0(
+        "beta (slope) could not be estimated in %d of %d repetition(s) because ",
+        "the prediction was constant, so beta is reported as NA. This signals ",
+        "that the fit carries no predictive signal for this outcome, not a data ",
+        "problem."
+      ),
+      n_degenerate, M
+    ), call. = FALSE)
+  }
   
   # Aggregate across repetitions: mean of estimates, mean of SE
   combined <- all_estimates[, .(

@@ -1,3 +1,7 @@
+Version: 0.2.1
+Status: recommended
+Message: Bug fix: blp()/blp_pred() no longer error on a constant (degenerate) fit.
+
 Version: 0.2.0
 Status: recommended
 Message: Baseline controls for BLP/GATES regressions improve power.

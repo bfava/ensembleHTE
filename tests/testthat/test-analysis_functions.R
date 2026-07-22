@@ -112,6 +112,62 @@ test_that("blp accepts treatment as vector", {
   expect_s3_class(result, "blp_results")
 })
 
+test_that(".blp_single tolerates a constant (degenerate) CATE", {
+  # A constant fitted CATE makes W2 all-zeros, so lm() drops it as collinear.
+  # The heterogeneity coefficient (beta2) should return NA rather than erroring
+  # with "subscript out of bounds".
+  set.seed(1)
+  n <- 300
+  D <- rbinom(n, 1, 0.5)
+  ps <- rep(0.5, n)
+  Y <- 1 + 0.5 * D + rnorm(n)
+  w <- 1 / (ps * (1 - ps))
+
+  res <- .blp_single(Y = Y, D = D, prop_score = ps, weight = w,
+                     predicted_ite = rep(2, n))
+
+  expect_s3_class(res$estimates, "data.table")
+  # beta1 (ATE) is still estimated; beta2 (HET) is NA (no detectable heterogeneity)
+  expect_false(is.na(res$estimates[term == "beta1", estimate]))
+  expect_true(is.na(res$estimates[term == "beta2", estimate]))
+  expect_true(is.na(res$estimates[term == "beta2", se]))
+})
+
+test_that(".blp_pred_single tolerates a constant prediction", {
+  set.seed(1)
+  n <- 300
+  Y <- 1 + rnorm(n)
+
+  res <- .blp_pred_single(Y = Y, predicted_y = rep(3, n))
+
+  expect_s3_class(res$estimates, "data.table")
+  expect_false(is.na(res$estimates[term == "intercept", estimate]))
+  expect_true(is.na(res$estimates[term == "beta", estimate]))
+})
+
+test_that("blp warns (rather than failing silently) when the CATE is constant", {
+  skip_on_cran()
+
+  data <- create_test_data(n = 120)
+
+  fit <- ensemble_hte(
+    Y ~ X1 + X2,
+    treatment = D,
+    data = data,
+    M = 2,
+    K = 2,
+    algorithms = c("lm"),
+    metalearner = "t"
+  )
+
+  # Force a globally constant CATE (as happens when a single-algorithm fit finds
+  # no heterogeneity). blp() should warn and report beta2 = NA, not fail silently.
+  fit$ite <- lapply(fit$ite, function(x) rep(1, length(x)))
+
+  expect_warning(res <- blp(fit), "could not be estimated")
+  expect_true(is.na(res$estimates[term == "beta2", estimate]))
+})
+
 
 # ==============================================================================
 # Tests for blp_pred()

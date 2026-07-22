@@ -829,11 +829,15 @@ gates <- function(ensemble_fit, n_groups = 3, outcome = NULL, treatment = NULL,
   coef_blp <- reg$coef
   vcov_blp <- reg$vcov
   
-  # Extract estimates and SEs
+  # Extract estimates and SEs, tolerating regressors that lm() dropped due to
+  # collinearity. In particular, a constant fitted CATE makes W2 all-zeros, so
+  # it is omitted from the fit; the corresponding estimate/SE are then NA,
+  # correctly signalling no detectable heterogeneity rather than erroring.
+  row_idx <- match(c("W1", "W2"), rownames(coef_blp))
   blp_estimates <- data.table(
     term = c("beta1", "beta2"),
-    estimate = coef_blp[c("W1", "W2"), 1],
-    se = coef_blp[c("W1", "W2"), 2]
+    estimate = coef_blp[row_idx, 1],
+    se = coef_blp[row_idx, 2]
   )
   
   list(
@@ -1166,6 +1170,23 @@ blp <- function(ensemble_fit, outcome = NULL, treatment = NULL,
   
   # Combine results across repetitions (average estimates and SEs)
   all_estimates <- rbindlist(lapply(blp_by_rep, `[[`, "estimates"), idcol = "repetition")
+  
+  # Warn (rather than fail silently) when the heterogeneity coefficient could not
+  # be estimated in one or more repetitions because the fitted CATE was constant.
+  # A constant CATE makes the heterogeneity regressor collinear, so lm() drops it
+  # and beta2 is NA for those splits.
+  n_degenerate <- all_estimates[term == "beta2", sum(is.na(estimate))]
+  if (n_degenerate > 0L) {
+    warning(sprintf(
+      paste0(
+        "beta2 (heterogeneity) could not be estimated in %d of %d repetition(s) ",
+        "because the fitted CATE was constant, so beta2 is reported as NA. ",
+        "This signals no detectable treatment-effect heterogeneity for this ",
+        "outcome (common with single-algorithm fits), not a data problem."
+      ),
+      n_degenerate, M
+    ), call. = FALSE)
+  }
   
   combined <- all_estimates[, .(
     estimate = mean(estimate),

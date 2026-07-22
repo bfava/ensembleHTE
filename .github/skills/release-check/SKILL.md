@@ -80,8 +80,28 @@ Everything regenerated in steps 2 and 6 must be staged (or intentionally exclude
 ### 10. Summary report
 Print a markdown table with one row per step (PASS / FAIL / SKIPPED + note). Do NOT run `git push` automatically — surface the table and let the user push.
 
+### 11. Publish the release on GitHub (tag is NOT enough)
+
+A pushed git tag does **not** create a GitHub Release, and the repo's landing page / "Releases" sidebar shows the latest **Release**, not the latest tag. If you stop at `git push origin vX.Y.Z`, GitHub will keep displaying the previous version.
+
+After the tag is pushed, always create the matching Release:
+
+```bash
+# Verify what GitHub currently shows as "Latest"
+gh release list --limit 5
+
+# Create the Release for the new tag, with notes from the NEWS.md section
+gh release create vX.Y.Z --title "ensembleHTE X.Y.Z" --notes "<paste the NEWS.md X.Y.Z bullets>"
+
+# Confirm the new version is now marked "Latest"
+gh release list --limit 5
+```
+
+The release is only complete when `gh release list` shows the new version tagged `Latest`. `gh` is authenticated on this machine (`gh auth status`); if it is not, tell the user to run `gh auth login` themselves — never do it silently.
+
 ## Pitfalls
 
+- Pushing a git tag is NOT a release. The GitHub landing page shows the latest **GitHub Release**, so you must run `gh release create vX.Y.Z` (step 11) or the site keeps showing the old version. Verify with `gh release list` that the new version is `Latest`.
 - Running `devtools::test()` without `NOT_CRAN=true` skips the heavy tests that exercise `grf` and ensemble paths.
 - Forgetting to re-run `precompute_vignette_fits.R` after an API change → vignettes break on the next pkgdown build.
 - Staging `man/*.Rd` edits without re-running `devtools::document()` produces a doc/code mismatch.

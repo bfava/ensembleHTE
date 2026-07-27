@@ -1,3 +1,31 @@
+# ensembleHTE 0.3.0
+
+## New features
+
+* `ensemble_hte()` and `ensemble_pred()` gain a `se_cluster_id` argument that
+  decouples the level of cluster-robust standard errors from the level used to
+  form cross-fitting folds. `individual_id` now controls only how folds are
+  built (all of a unit's rows stay in one fold), while `se_cluster_id` controls
+  the clustering of standard errors in the downstream analyses (`blp()`,
+  `gates()`, `clan()`, `gavs()`, ...). If only one of the two is supplied, it is
+  used for both roles. When a fit starts, an informative message reports the
+  fold-splitting level and the SE-clustering level. Fit objects now expose
+  `$se_cluster_id` (and the `$individual_id_name` / `$se_cluster_id_name`
+  labels), and `print()` shows the two levels separately. A typical use is
+  predicting outcomes for unobserved units within observed clusters (split by
+  individual, cluster SEs by village).
+
+## Bug fixes
+
+* Panel data (`individual_id`) is now respected in the cross-validated
+  ensemble step, not just the outer cross-fitting split. Previously, when
+  `ensemble_strategy = "cv"`, the inner ensemble-weight CV split ignored the
+  cluster identifier, so observations from the same individual could land in
+  different ensemble folds and appear on both the fitting and prediction sides
+  of that inner CV. The ensemble split (and the baseline ensemble that reuses
+  it) in `ensemble_hte()` and `ensemble_pred()` now cluster by
+  `individual_id`, matching the outer split.
+
 # ensembleHTE 0.2.1
 
 ## Bug fixes

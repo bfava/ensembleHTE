@@ -580,8 +580,8 @@ gavs_restricted <- function(ensemble_fit, restrict_by, n_groups = 3, outcome = N
   .check_small_cells(check_folds, n_groups, restrict_by = NULL, func_name = "GAVS Comparison (unrestricted)")
   .check_small_cells(check_folds, n_groups, restrict_by = check_strata_rest, func_name = "GAVS Comparison (restricted)")
   
-  # Extract individual_id for cluster-robust SEs (if panel data)
-  cluster_id <- ensemble_fit$individual_id
+  # Extract the SE-clustering identifier (if panel/clustered data)
+  cluster_id <- .fit_cluster_id(ensemble_fit)
   
   results_by_rep <- lapply(1:M, function(m) {
     gavs_unrest <- .gavs_single(
@@ -1333,8 +1333,8 @@ gates_restricted <- function(ensemble_fit, restrict_by, n_groups = 3, outcome = 
   .check_small_cells(check_folds, n_groups, restrict_by = NULL, func_name = "GATES Comparison (unrestricted)")
   .check_small_cells(check_folds, n_groups, restrict_by = check_strata_rest, func_name = "GATES Comparison (restricted)")
   
-  # Extract individual_id for cluster-robust SEs (if panel data)
-  cluster_id <- ensemble_fit$individual_id
+  # Extract the SE-clustering identifier (if panel/clustered data)
+  cluster_id <- .fit_cluster_id(ensemble_fit)
   
   # Compute GATES for each repetition (both unrestricted and restricted)
   results_by_rep <- lapply(1:M, function(m) {

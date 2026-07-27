@@ -27,6 +27,7 @@ ensemble_hte(
   train_idx = NULL,
   ensemble_strategy = c("cv", "average"),
   individual_id = NULL,
+  se_cluster_id = NULL,
   n_cores = 1,
   store_baseline = c("ensemble", "none", "all")
 )
@@ -201,15 +202,33 @@ See \strong{Ensemble Strategy} section for details.}
 
 \item{individual_id}{Required when the dataset is a panel (e.g., individuals
   observed over multiple time periods). Specifies the column that identifies
-  individuals so that (1) all observations for the same individual are placed
-  in the same cross-fitting fold, and (2) cluster-robust standard errors are
-  used in all downstream analyses.
+  the unit used to build cross-fitting folds, so that all observations for
+  the same unit are placed in the same fold. By default this identifier is
+  also used to cluster the standard errors in all downstream analyses; supply
+  \code{se_cluster_id} to cluster at a different level (see below).
 
   Example: for a panel of students observed across semesters, set
   \code{individual_id = student_id}.
 
   Can be an unquoted column name, a quoted string (\code{"student_id"}),
   or a vector of identifiers.}
+
+\item{se_cluster_id}{Optional identifier for the level at which cluster-robust
+  standard errors are computed in the downstream analyses (\code{\link{blp}},
+  \code{\link{gates}}, \code{\link{clan}}, ...). Decouples SE clustering from
+  fold splitting: \code{individual_id} controls how folds are formed, while
+  \code{se_cluster_id} controls SE clustering. If only one of
+  \code{individual_id} / \code{se_cluster_id} is supplied, that identifier is
+  used for both roles. A message reporting the split level and the clustering
+  level is printed when the fit starts.
+
+  A typical use is predicting outcomes for unobserved units within observed
+  clusters (e.g., new villagers in sampled villages): split at the individual
+  level (\code{individual_id = id}) but cluster SEs at the village level
+  (\code{se_cluster_id = village}).
+
+  Accepts an unquoted column name, a quoted string, or a vector of
+  identifiers. Defaults to \code{individual_id}.}
 
 \item{n_cores}{Integer. Number of cores for parallel processing of repetitions.
 Default is 1 (sequential). Set to higher values to parallelize the M repetitions.
@@ -272,7 +291,9 @@ An object of class \code{ensemble_hte_fit} containing:
   \item{task_type}{Task type (regr or classif)}
   \item{scale_covariates}{Whether covariates were scaled}
   \item{tune, tune_params}{Tuning settings}
-  \item{individual_id}{Vector of individual identifiers (if panel data)}
+  \item{individual_id}{Vector of fold-splitting identifiers (if panel data)}
+  \item{se_cluster_id}{Vector of SE-clustering identifiers (if supplied or
+    inherited from \code{individual_id})}
   \item{n_cores}{Number of cores used for parallel processing}
 }
 }

@@ -230,8 +230,9 @@ blp_pred <- function(ensemble_fit, outcome = NULL, subset = NULL) {
   # Extract components from ensemble_fit
   M <- ensemble_fit$M
   
-  # Extract individual_id for cluster-robust SEs (if panel data)
-  cluster_id <- if (!is.null(ensemble_fit$individual_id)) ensemble_fit$individual_id[use_idx] else NULL
+  # Extract the SE-clustering identifier (if panel/clustered data)
+  .cid <- .fit_cluster_id(ensemble_fit)
+  cluster_id <- if (!is.null(.cid)) .cid[use_idx] else NULL
   
   # Compute BLP for each repetition
   blp_by_rep <- lapply(1:M, function(m) {

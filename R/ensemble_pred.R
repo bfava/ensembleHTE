@@ -189,15 +189,27 @@
 #'   See \strong{Ensemble Strategy} section for more details.
 #' @param individual_id Required when the dataset is a panel (e.g., individuals
 #'   observed over multiple time periods). Specifies the column that identifies
-#'   individuals so that (1) all observations for the same individual are placed
-#'   in the same cross-fitting fold, and (2) cluster-robust standard errors are
-#'   used in all downstream analyses.
+#'   the unit used to build cross-fitting folds, so that all observations for
+#'   the same unit are placed in the same fold. By default this identifier is
+#'   also used to cluster the standard errors in all downstream analyses; supply
+#'   \code{se_cluster_id} to cluster at a different level (see below).
 #'
 #'   Example: for a panel of students observed across semesters, set
 #'   \code{individual_id = student_id}.
 #'
 #'   Can be an unquoted column name, a quoted string (\code{"student_id"}),
 #'   or a vector of identifiers.
+#' @param se_cluster_id Optional identifier for the level at which cluster-robust
+#'   standard errors are computed in the downstream analyses (\code{\link{blp_pred}},
+#'   \code{\link{gavs}}, ...). Decouples SE clustering from fold splitting:
+#'   \code{individual_id} controls how folds are formed, while
+#'   \code{se_cluster_id} controls SE clustering. If only one of
+#'   \code{individual_id} / \code{se_cluster_id} is supplied, that identifier is
+#'   used for both roles. A message reporting the split level and the clustering
+#'   level is printed when the fit starts.
+#'
+#'   Accepts an unquoted column name, a quoted string, or a vector of
+#'   identifiers. Defaults to \code{individual_id}.
 #' @param n_cores Integer. Number of cores for parallel processing of repetitions.
 #'   Default is 1 (sequential). Set to higher values to parallelize the M repetitions.
 #'   Uses the \code{future} framework, so users can also set up their own parallel
@@ -222,7 +234,9 @@
 #'   \item{task_type}{Task type (regr or classif)}
 #'   \item{scale_covariates}{Whether covariates were scaled}
 #'   \item{tune, tune_params}{Tuning settings}
-#'   \item{individual_id}{Vector of individual identifiers (if panel data)}
+#'   \item{individual_id}{Vector of fold-splitting identifiers (if panel data)}
+#'   \item{se_cluster_id}{Vector of SE-clustering identifiers (if supplied or
+#'     inherited from \code{individual_id})}
 #'   \item{n_cores}{Number of cores used for parallel processing}
 #' }
 #'
@@ -350,6 +364,7 @@ ensemble_pred <- function(formula = NULL, data = NULL,
                           learner_params = NULL,
                           ensemble_strategy = c("cv", "average"),
                           individual_id = NULL,
+                          se_cluster_id = NULL,
                           n_cores = 1) {
   
   # Capture the call
@@ -576,42 +591,57 @@ ensemble_pred <- function(formula = NULL, data = NULL,
             "Prediction may not be meaningful.")
   }
   
-  # Handle individual_id for panel data
-  individual_id_vec <- NULL
+  # Handle panel / cluster identifiers.
+  # `individual_id` governs fold splitting (all its observations stay together
+  # in one cross-fitting fold); `se_cluster_id` governs cluster-robust standard
+  # errors in the downstream analyses. If only one is supplied, it is used for
+  # BOTH roles.
+  id_ind <- NULL
   if (!is.null(individual_id)) {
-    # Try to resolve individual_id as column name (like treatment in ensemble_hte)
-    id_expr <- substitute(individual_id)
-    id_resolved <- tryCatch(
-      parse_column_name(id_expr, parent.frame(), "individual_id", data),
-      error = function(e) NULL
-    )
-    
-    if (!is.null(id_resolved) && id_resolved %in% names(data)) {
-      individual_id_vec <- data[[id_resolved]]
-    } else if (is.character(individual_id) && length(individual_id) == 1 && individual_id %in% names(data)) {
-      individual_id_vec <- data[[individual_id]]
-    } else if (length(individual_id) == n) {
-      individual_id_vec <- individual_id
-    } else {
-      stop("individual_id must be a column name in the data or a vector of length n (", n, ")")
+    id_ind <- .resolve_panel_id(individual_id, substitute(individual_id),
+                                parent.frame(), data, n, "individual_id")
+  }
+  id_se <- NULL
+  if (!is.null(se_cluster_id)) {
+    id_se <- .resolve_panel_id(se_cluster_id, substitute(se_cluster_id),
+                               parent.frame(), data, n, "se_cluster_id")
+  }
+
+  split_id_vec <- NULL; split_id_name <- NULL
+  cluster_id_vec <- NULL; cluster_id_name <- NULL
+  if (!is.null(id_ind) && !is.null(id_se)) {
+    split_id_vec   <- id_ind$vec; split_id_name   <- id_ind$name
+    cluster_id_vec <- id_se$vec;  cluster_id_name <- id_se$name
+  } else if (!is.null(id_ind)) {
+    split_id_vec   <- id_ind$vec; split_id_name   <- id_ind$name
+    cluster_id_vec <- id_ind$vec; cluster_id_name <- id_ind$name
+  } else if (!is.null(id_se)) {
+    split_id_vec   <- id_se$vec; split_id_name   <- id_se$name
+    cluster_id_vec <- id_se$vec; cluster_id_name <- id_se$name
+  }
+
+  if (!is.null(split_id_vec)) {
+    if (anyNA(split_id_vec)) {
+      stop("The fold-splitting identifier ('", split_id_name, "') contains NA ",
+           "values. All observations must have an identifier.")
     }
-    
-    if (anyNA(individual_id_vec)) {
-      stop("individual_id contains NA values. All observations must have an individual identifier.")
+    if (anyNA(cluster_id_vec)) {
+      stop("The SE-clustering identifier ('", cluster_id_name, "') contains NA ",
+           "values. All observations must have an identifier.")
     }
-    
-    n_individuals <- length(unique(individual_id_vec))
-    if (n_individuals == n) {
-      warning("Every observation has a unique individual_id (", n_individuals,
-              " unique IDs for ", n, " observations). ",
-              "This is equivalent to no panel structure. ",
-              "If your data is not panel data, you can omit individual_id.")
+    n_split_groups <- length(unique(split_id_vec))
+    if (n_split_groups == n && !(!is.null(id_ind) && !is.null(id_se))) {
+      warning("Every observation has a unique '", split_id_name, "' value (",
+              n_split_groups, " for ", n, " observations). ",
+              "This is equivalent to no panel structure for fold splitting.")
     }
-    if (n_individuals < K) {
-      stop("Number of unique individuals (", n_individuals,
+    if (n_split_groups < K) {
+      stop("Number of unique '", split_id_name, "' groups (", n_split_groups,
            ") must be at least K (", K, ")")
     }
-    
+    message("ensembleHTE: splitting cross-fitting folds by '", split_id_name,
+            "' (", n_split_groups, " groups); clustering standard errors by '",
+            cluster_id_name, "' (", length(unique(cluster_id_vec)), " clusters).")
   }
   
   # Convert character columns to factor (ML backends require factor, not character)
@@ -667,7 +697,7 @@ ensemble_pred <- function(formula = NULL, data = NULL,
 
   # Split the sample - stratify by train_idx to ensure each fold has both types
   splits <- create_folds(n, M = M, K = K, stratify_var = train_idx,
-                         cluster_id = individual_id_vec)
+                         cluster_id = split_id_vec)
 
   # Train learners and compute ensemble predictions
   pred_cols <- paste0("pred_", algorithms)
@@ -712,9 +742,12 @@ ensemble_pred <- function(formula = NULL, data = NULL,
       pred_rep <- rowMeans(predictions_m, na.rm = TRUE)
     } else {
       # Cross-validated OLS ensemble (default "cv" strategy)
-      # Create ensemble folds for ALL observations, stratified by original K-fold
+      # Create ensemble folds for ALL observations, stratified by original K-fold.
+      # Cluster by individual_id_vec (when panel) so all observations for the same
+      # unit stay in the same ensemble fold, mirroring the outer cross-fitting split.
       ens_splits <- create_folds(n, M = 1, K = ensemble_folds, 
-                                 stratify_var = splits[[m]])[[1]]
+                                 stratify_var = splits[[m]],
+                                 cluster_id = split_id_vec)[[1]]
       
       # Check for zero-variance predictors and exclude them
       # Use only training observations to compute variance
@@ -787,7 +820,10 @@ ensemble_pred <- function(formula = NULL, data = NULL,
       Y = Y,
       X = X,
       train_idx = train_idx,
-      individual_id = individual_id_vec,
+      individual_id = split_id_vec,
+      individual_id_name = split_id_name,
+      se_cluster_id = cluster_id_vec,
+      se_cluster_id_name = cluster_id_name,
       splits = splits,
       n = n,
       n_train = n_train,
@@ -865,8 +901,9 @@ print.ensemble_pred_fit <- function(x, ...) {
   cat("  Outcome:           ", outcome_name, "\n", sep = "")
   cat("  Covariates:        ", ncol(x$X), "\n", sep = "")
   if (!is.null(x$individual_id)) {
-    n_individuals <- length(unique(x$individual_id))
-    cat("  Panel data:        ", n_individuals, " individuals\n", sep = "")
+    split_lbl <- if (!is.null(x$individual_id_name)) x$individual_id_name else "individual"
+    cat("  Split by:          ", split_lbl, " (",
+        length(unique(x$individual_id)), " groups)\n", sep = "")
   }
   cat("\n")
   cat("Model specification:\n")
@@ -883,8 +920,13 @@ print.ensemble_pred_fit <- function(x, ...) {
   }
   cat("  Covariate scaling: ", scale_status, "\n", sep = "")
   cat("  Hyperparameter tuning: ", tune_status, "\n", sep = "")
-  if (!is.null(x$individual_id)) {
-    cat("  Standard errors:   cluster-robust (at individual level)\n", sep = "")
+  cluster_vec <- if (!is.null(x$se_cluster_id)) x$se_cluster_id else x$individual_id
+  if (!is.null(cluster_vec)) {
+    cl_lbl <- if (!is.null(x$se_cluster_id_name)) x$se_cluster_id_name
+              else if (!is.null(x$individual_id_name)) x$individual_id_name
+              else "individual"
+    cat("  Std. errors:       cluster-robust by ", cl_lbl, " (",
+        length(unique(cluster_vec)), " clusters)\n", sep = "")
   }
   invisible(x)
 }

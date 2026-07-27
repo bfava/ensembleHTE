@@ -589,6 +589,37 @@ parse_column_name <- function(expr, env, arg_name = "variable", data = NULL) {
 }
 
 
+# Resolve a panel / cluster identifier (fold-splitting or SE-clustering) to a
+# (vector, label) pair. Mirrors the treatment-style flexible input handling:
+# accepts an unquoted column name, a quoted column name, a variable holding a
+# column name, or a raw length-n vector of identifiers.
+# `id_expr` must be captured with substitute() in the calling function so that
+# the promise is not forced prematurely (a bare column name that is not a
+# variable in the caller's environment would otherwise error).
+.resolve_panel_id <- function(id_arg, id_expr, env, data, n, arg_name) {
+  id_resolved <- tryCatch(
+    parse_column_name(id_expr, env, arg_name, data),
+    error = function(e) NULL
+  )
+  if (!is.null(id_resolved) && !is.null(data) && id_resolved %in% names(data)) {
+    return(list(vec = data[[id_resolved]], name = id_resolved))
+  } else if (is.character(id_arg) && length(id_arg) == 1 &&
+             !is.null(data) && id_arg %in% names(data)) {
+    return(list(vec = data[[id_arg]], name = id_arg))
+  } else if (length(id_arg) == n) {
+    return(list(vec = id_arg, name = arg_name))
+  }
+  stop(arg_name, " must be a column name in the data or a vector of length n (", n, ")")
+}
+
+# Extract the SE-clustering identifier from a fit object, falling back to the
+# fold-splitting identifier (individual_id) for objects created before
+# se_cluster_id existed.
+.fit_cluster_id <- function(fit) {
+  if (!is.null(fit$se_cluster_id)) fit$se_cluster_id else fit$individual_id
+}
+
+
 #' Check for small fold (or fold x restrict_by) cells and warn
 #'
 #' @description

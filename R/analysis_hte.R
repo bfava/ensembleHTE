@@ -665,8 +665,8 @@ gates <- function(ensemble_fit, n_groups = 3, outcome = NULL, treatment = NULL,
   check_strata <- if (!is.null(strata_vec)) strata_vec[check_ref] else NULL
   .check_small_cells(check_folds, n_groups, restrict_by = check_strata, func_name = "GATES")
   
-  # Extract individual_id for cluster-robust SEs (if panel data)
-  cluster_id <- ensemble_fit$individual_id
+  # Extract the SE-clustering identifier (if panel/clustered data)
+  cluster_id <- .fit_cluster_id(ensemble_fit)
   
   gates_by_rep <- lapply(1:M, function(m) {
     eff_controls     <- controls
@@ -1127,8 +1127,9 @@ blp <- function(ensemble_fit, outcome = NULL, treatment = NULL,
   # Extract components from ensemble_fit
   M <- ensemble_fit$M
   
-  # Extract individual_id for cluster-robust SEs (if panel data)
-  cluster_id <- if (!is.null(ensemble_fit$individual_id)) ensemble_fit$individual_id[use_idx] else NULL
+  # Extract the SE-clustering identifier (if panel/clustered data)
+  .cid <- .fit_cluster_id(ensemble_fit)
+  cluster_id <- if (!is.null(.cid)) .cid[use_idx] else NULL
 
   # Resolve baseline_as_control
   has_stored_baseline <- inherits(ensemble_fit, "ensemble_hte_fit") &&
@@ -1906,8 +1907,8 @@ clan <- function(ensemble_fit, variables = NULL, n_groups = 3, na_rm = FALSE, sc
   check_folds <- lapply(splits, function(s) s[check_ref])
   .check_small_cells(check_folds, n_groups, func_name = "CLAN")
   
-  # Extract individual_id for cluster-robust SEs (if panel data)
-  cluster_id <- ensemble_fit$individual_id
+  # Extract the SE-clustering identifier (if panel/clustered data)
+  cluster_id <- .fit_cluster_id(ensemble_fit)
   
   # Check for NAs in analysis variables and warn if na_rm = FALSE
   if (!na_rm) {
@@ -2385,8 +2386,8 @@ gavs <- function(ensemble_fit, n_groups = 3, outcome = NULL, subset = NULL,
   check_strata <- if (!is.null(strata_vec)) strata_vec[check_ref] else NULL
   .check_small_cells(check_folds, n_groups, restrict_by = check_strata, func_name = "GAVS")
   
-  # Extract individual_id for cluster-robust SEs (if panel data)
-  cluster_id <- ensemble_fit$individual_id
+  # Extract the SE-clustering identifier (if panel/clustered data)
+  cluster_id <- .fit_cluster_id(ensemble_fit)
   
   gavs_by_rep <- lapply(1:M, function(m) {
     .gavs_single(

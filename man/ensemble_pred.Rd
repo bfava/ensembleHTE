@@ -23,6 +23,7 @@ ensemble_pred(
   ensemble_strategy = c("cv", "average"),
   individual_id = NULL,
   se_cluster_id = NULL,
+  balance_folds_by = NULL,
   n_cores = 1
 )
 }
@@ -160,8 +161,8 @@ See \strong{Ensemble Strategy} section for more details.}
   Example: for a panel of students observed across semesters, set
   \code{individual_id = student_id}.
 
-  Can be an unquoted column name, a quoted string (\code{"student_id"}),
-  or a vector of identifiers.}
+  Can be a quoted column name (\code{"student_id"}), a variable holding a
+  column name, or a vector of identifiers.}
 
 \item{se_cluster_id}{Optional identifier for the level at which cluster-robust
   standard errors are computed in the downstream analyses (\code{\link{blp_pred}},
@@ -172,8 +173,26 @@ See \strong{Ensemble Strategy} section for more details.}
   used for both roles. A message reporting the split level and the clustering
   level is printed when the fit starts.
 
-  Accepts an unquoted column name, a quoted string, or a vector of
-  identifiers. Defaults to \code{individual_id}.}
+  Accepts a quoted column name, a variable holding a column name, or a vector
+  of identifiers. Defaults to \code{individual_id}.}
+
+\item{balance_folds_by}{Optional variable (or variables) on which to balance
+  the cross-fitting folds at the split stage. By default, when a training
+  subset is supplied via \code{train_idx}, the folds are stratified so that
+  training and prediction-only observations are spread evenly across the K
+  folds. Supply \code{balance_folds_by} to additionally guarantee that a
+  categorical variable (e.g. community/village, gender) is balanced across the
+  K folds in every one of the M repetitions. When several variables are
+  supplied they are crossed, so the balance is \emph{joint} across them.
+
+  Accepts a quoted column name, a character vector of column names
+  (\code{c("female", "region")}), a variable holding a column name, or a
+  vector of length n. Each
+  additional variable multiplies the number of stratum cells and shrinks each
+  cell; when a cell has fewer than \code{K} observations it cannot be spread
+  across all folds and a warning reports that balance is approximate. When
+  \code{individual_id} is supplied, balancing operates at the unit level and
+  the balancing variables should be constant within a unit.}
 
 \item{n_cores}{Integer. Number of cores for parallel processing of repetitions.
 Default is 1 (sequential). Set to higher values to parallelize the M repetitions.
@@ -203,6 +222,8 @@ An object of class \code{ensemble_pred_fit} containing:
   \item{individual_id}{Vector of fold-splitting identifiers (if panel data)}
   \item{se_cluster_id}{Vector of SE-clustering identifiers (if supplied or
     inherited from \code{individual_id})}
+  \item{balance_folds_by}{Names of the variables used to balance the folds
+    (if supplied)}
   \item{n_cores}{Number of cores used for parallel processing}
 }
 }

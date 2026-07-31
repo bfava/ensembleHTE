@@ -591,11 +591,9 @@ parse_column_name <- function(expr, env, arg_name = "variable", data = NULL) {
 
 # Resolve a panel / cluster identifier (fold-splitting or SE-clustering) to a
 # (vector, label) pair. Mirrors the treatment-style flexible input handling:
-# accepts an unquoted column name, a quoted column name, a variable holding a
-# column name, or a raw length-n vector of identifiers.
-# `id_expr` must be captured with substitute() in the calling function so that
-# the promise is not forced prematurely (a bare column name that is not a
-# variable in the caller's environment would otherwise error).
+# accepts a quoted column name, a variable holding a column name, or a raw
+# length-n vector of identifiers (a bare unquoted column name is not supported).
+# `id_expr` is captured with substitute() in the calling function.
 .resolve_panel_id <- function(id_arg, id_expr, env, data, n, arg_name) {
   id_resolved <- tryCatch(
     parse_column_name(id_expr, env, arg_name, data),
@@ -610,6 +608,83 @@ parse_column_name <- function(expr, env, arg_name = "variable", data = NULL) {
     return(list(vec = id_arg, name = arg_name))
   }
   stop(arg_name, " must be a column name in the data or a vector of length n (", n, ")")
+}
+
+# Resolve `balance_folds_by` to a list of stratifying vectors plus their labels.
+# `balance_folds_by` may be a character vector of column names, a single column
+# name, a variable holding a name, or a raw atomic vector of length n. Each
+# resolved variable is crossed with the treatment / train_idx stratification so
+# that fold assignment keeps those cells (jointly) balanced across the K folds.
+# `expr` must be captured with substitute() in the calling function.
+.resolve_balance_folds <- function(arg, expr, env, data, n) {
+  # One or more column names supplied as a character vector.
+  if (is.character(arg)) {
+    if (is.null(data)) {
+      stop("balance_folds_by was given as column name(s) but no 'data' is ",
+           "available. Supply 'data', or pass a vector of length n (", n, ").")
+    }
+    missing_cols <- setdiff(arg, names(data))
+    if (length(missing_cols) > 0) {
+      stop("balance_folds_by column(s) not found in data: ",
+           paste(missing_cols, collapse = ", "))
+    }
+    return(list(vars = lapply(arg, function(nm) data[[nm]]), names = arg))
+  }
+
+  # A raw atomic vector of length n (a single balancing variable).
+  if (is.atomic(arg) && length(arg) == n) {
+    label <- tryCatch(paste(deparse(expr), collapse = ""),
+                      error = function(e) "balance_folds_by")
+    return(list(vars = list(arg), names = label))
+  }
+
+  # A single column name (symbol) or a variable holding a column name.
+  resolved <- tryCatch(parse_column_name(expr, env, "balance_folds_by", data),
+                       error = function(e) NULL)
+  if (!is.null(resolved) && !is.null(data) && resolved %in% names(data)) {
+    return(list(vars = list(data[[resolved]]), names = resolved))
+  }
+
+  stop("balance_folds_by must be a column name (or character vector of column ",
+       "names) in the data, or an atomic vector of length n (", n, ").")
+}
+
+# Build the fold-stratification variable by crossing the base strata (treatment
+# and/or the train_idx indicator) with any user-supplied `balance_folds_by`
+# variables. `base` is a list of vectors that are always balanced across folds.
+# Returns a single factor (the full cross-classification) for create_folds().
+.build_stratify_var <- function(base, balance_vars = NULL) {
+  components <- c(base, balance_vars)
+  if (length(components) == 1L) {
+    return(components[[1]])
+  }
+  do.call(interaction, c(components, list(drop = TRUE)))
+}
+
+# Report fold balancing and warn when some stratum cells are too small to be
+# spread across all K folds. `stratify_var` is the full cross-classification;
+# when a fold-splitting identifier is supplied, balance operates at the cluster
+# level, so cell sizes are counted per cluster (one row per split group).
+.report_balance_folds <- function(stratify_var, balance_names, K, split_id_vec = NULL) {
+  if (!is.null(split_id_vec)) {
+    keep <- !duplicated(split_id_vec)
+    cell_sizes <- as.integer(table(stratify_var[keep]))
+  } else {
+    cell_sizes <- as.integer(table(stratify_var))
+  }
+  n_cells <- sum(cell_sizes > 0)
+  message("ensembleHTE: balancing cross-fitting folds jointly by treatment and '",
+          paste(balance_names, collapse = "', '"), "' (", n_cells,
+          " stratum cells).")
+  n_small <- sum(cell_sizes > 0 & cell_sizes < K)
+  if (n_small > 0) {
+    unit <- if (is.null(split_id_vec)) "observations" else "clusters"
+    warning("balance_folds_by: ", n_small, " of ", n_cells, " stratum cells have ",
+            "fewer than K = ", K, " ", unit, ". Fold balance for those cells is ",
+            "approximate, since they cannot be spread across all K folds. ",
+            "Consider using fewer balancing variables or a smaller K.")
+  }
+  invisible(NULL)
 }
 
 # Extract the SE-clustering identifier from a fit object, falling back to the

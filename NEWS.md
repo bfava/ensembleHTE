@@ -1,3 +1,24 @@
+# ensembleHTE 0.3.1
+
+## New features
+
+* `ensemble_hte()` and `ensemble_pred()` gain a `balance_folds_by` argument for
+  stratified fold assignment. In `ensemble_hte()` the folds are already
+  stratified so the treated share is balanced across the K folds (and, when a
+  training subset is supplied via `train_idx`, so that training and
+  prediction-only observations are spread evenly across folds); `balance_folds_by`
+  additionally guarantees that a categorical variable (e.g. community/village,
+  gender) is balanced across the K folds in every one of the M repetitions.
+  Because the balancing variables are crossed with treatment, the balance is
+  *joint* — e.g. with `balance_folds_by = "female"` the treated share *within
+  each gender* is balanced across folds, not merely the marginal shares. Accepts
+  a quoted column name, a character vector of column names, a variable holding a
+  name, or a length-n vector. A message reports the number of stratum cells, and
+  a warning fires when some cell has fewer than `K` observations (so balance is
+  only approximate). Fit objects expose `$balance_folds_by`, and `print()` shows
+  the balancing variables. This is distinct from `individual_id` (keep a unit's
+  rows in one fold) and `se_cluster_id` (SE clustering).
+
 # ensembleHTE 0.3.0
 
 ## New features

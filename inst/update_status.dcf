@@ -1,3 +1,7 @@
+Version: 0.3.1
+Status: recommended
+Message: New balance_folds_by argument for stratified fold assignment (balance treatment shares within a categorical variable across folds).
+
 Version: 0.3.0
 Status: recommended
 Message: New se_cluster_id argument decouples SE clustering from fold splitting; panel clustering now respected in the ensemble CV step.

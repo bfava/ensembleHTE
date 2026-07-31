@@ -237,8 +237,8 @@
 #'   Example: for a panel of students observed across semesters, set
 #'   \code{individual_id = student_id}.
 #'
-#'   Can be an unquoted column name, a quoted string (\code{"student_id"}),
-#'   or a vector of identifiers.
+#'   Can be a quoted column name (\code{"student_id"}), a variable holding a
+#'   column name, or a vector of identifiers.
 #' @param se_cluster_id Optional identifier for the level at which cluster-robust
 #'   standard errors are computed in the downstream analyses (\code{\link{blp}},
 #'   \code{\link{gates}}, \code{\link{clan}}, ...). Decouples SE clustering from
@@ -253,8 +253,28 @@
 #'   level (\code{individual_id = id}) but cluster SEs at the village level
 #'   (\code{se_cluster_id = village}).
 #'
-#'   Accepts an unquoted column name, a quoted string, or a vector of
-#'   identifiers. Defaults to \code{individual_id}.
+#'   Accepts a quoted column name, a variable holding a column name, or a vector
+#'   of identifiers. Defaults to \code{individual_id}.
+#' @param balance_folds_by Optional variable (or variables) on which to balance
+#'   the cross-fitting folds at the split stage. By default the folds are
+#'   stratified so that the treated share is balanced across the K folds (and,
+#'   when a training subset is supplied via \code{train_idx}, so that training
+#'   and prediction-only observations are spread evenly across folds). Supply
+#'   \code{balance_folds_by} to additionally guarantee that a categorical
+#'   variable (e.g. community/village, gender) is balanced across the K folds in
+#'   every one of the M repetitions. Because the balancing variables are crossed
+#'   with treatment, the balance is \emph{joint}: e.g. with
+#'   \code{balance_folds_by = "female"} the treated share \emph{within each
+#'   gender} is balanced across folds, not merely the marginal shares.
+#'
+#'   Accepts a quoted column name, a character vector of column names
+#'   (\code{c("female", "region")}), a variable holding a column name, or a
+#'   vector of length n. Each
+#'   additional variable multiplies the number of stratum cells and shrinks each
+#'   cell; when a cell has fewer than \code{K} observations it cannot be spread
+#'   across all folds and a warning reports that balance is approximate. When
+#'   \code{individual_id} is supplied, balancing operates at the unit level and
+#'   the balancing variables should be constant within a unit.
 #' @param n_cores Integer. Number of cores for parallel processing of repetitions.
 #'   Default is 1 (sequential). Set to higher values to parallelize the M repetitions.
 #'   Uses the \code{future} framework, so users can also set up their own parallel
@@ -317,6 +337,8 @@
 #'   \item{individual_id}{Vector of fold-splitting identifiers (if panel data)}
 #'   \item{se_cluster_id}{Vector of SE-clustering identifiers (if supplied or
 #'     inherited from \code{individual_id})}
+#'   \item{balance_folds_by}{Names of the variables used to balance the folds
+#'     (if supplied)}
 #'   \item{n_cores}{Number of cores used for parallel processing}
 #' }
 #'
@@ -452,6 +474,7 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
                          ensemble_strategy = c("cv", "average"),
                          individual_id = NULL,
                          se_cluster_id = NULL,
+                         balance_folds_by = NULL,
                          n_cores = 1,
                          store_baseline = c("ensemble", "none", "all")) {
   
@@ -835,6 +858,21 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
             "' (", n_split_groups, " groups); clustering standard errors by '",
             cluster_id_name, "' (", length(unique(cluster_id_vec)), " clusters).")
   }
+
+  # Resolve balance_folds_by: variables to keep (jointly) balanced across folds.
+  balance_vars <- NULL; balance_names <- NULL
+  if (!is.null(balance_folds_by)) {
+    bal <- .resolve_balance_folds(balance_folds_by, substitute(balance_folds_by),
+                                  parent.frame(), data, n)
+    balance_vars <- bal$vars
+    balance_names <- bal$names
+    for (i in seq_along(balance_vars)) {
+      if (anyNA(balance_vars[[i]])) {
+        stop("balance_folds_by variable '", balance_names[i], "' contains NA ",
+             "values. All observations must have a balancing value.")
+      }
+    }
+  }
   
   # Propensity score handling
   if (is.null(prop_score)) {
@@ -906,8 +944,13 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
     }
   }
 
-  # Split the sample - stratify by D and train_idx
-  stratify_var <- interaction(D, train_idx, drop = TRUE)
+  # Split the sample - stratify by D and train_idx (and any balance_folds_by
+  # variables), so treatment (and, jointly, the requested variables) stay
+  # balanced across the K folds.
+  stratify_var <- .build_stratify_var(list(D, train_idx), balance_vars)
+  if (!is.null(balance_vars)) {
+    .report_balance_folds(stratify_var, balance_names, K, split_id_vec)
+  }
   splits <- create_folds(n, M = M, K = K, stratify_var = stratify_var,
                          cluster_id = split_id_vec)
 
@@ -1127,6 +1170,7 @@ ensemble_hte <- function(formula = NULL, treatment = NULL, data = NULL,
       individual_id_name = split_id_name,
       se_cluster_id = cluster_id_vec,
       se_cluster_id_name = cluster_id_name,
+      balance_folds_by = balance_names,
       splits = splits,
       n = n,
       n_train = n_train,
@@ -1251,6 +1295,10 @@ print.ensemble_hte_fit <- function(x, ...) {
     split_lbl <- if (!is.null(x$individual_id_name)) x$individual_id_name else "individual"
     cat("  Split by:          ", split_lbl, " (",
         length(unique(x$individual_id)), " groups)\n", sep = "")
+  }
+  if (!is.null(x$balance_folds_by)) {
+    cat("  Folds balanced by: ", paste(x$balance_folds_by, collapse = ", "),
+        "\n", sep = "")
   }
   cat("\n")
   cat("Model specification:\n")

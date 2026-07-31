@@ -44,6 +44,7 @@ out_dir <- "vignettes/precomputed"
 # ---------------------------------------------------------------------------
 
 cat("Fitting: Complete Guide — main HTE model ...\n")
+set.seed(2026)
 fit_hte <- ensemble_hte(
   Y = "exp_yrly_end",
   D = "treat",
@@ -56,6 +57,7 @@ fit_hte <- ensemble_hte(
 saveRDS(fit_hte, file.path(out_dir, "fit_hte.rds"))
 
 cat("Fitting: Complete Guide — prediction model ...\n")
+set.seed(2026)
 fit_pred <- ensemble_pred(
   Y    = "bank_profits_pp",
   X    = profit_covars,
@@ -67,6 +69,7 @@ fit_pred <- ensemble_pred(
 saveRDS(fit_pred, file.path(out_dir, "fit_pred.rds"))
 
 cat("Fitting: Complete Guide — subset HTE model ...\n")
+set.seed(2026)
 fit_subset_hte <- ensemble_hte(
   Y = "exp_yrly_end",
   D = "treat",
@@ -86,6 +89,7 @@ hte_covars_quick <- c("css_creditscorefinal", "own_anybus",
                       "max_yearsinbusiness", "css_assetvalue")
 
 cat("Fitting: Quick Guide — HTE model ...\n")
+set.seed(2026)
 fit_hte_quick <- ensemble_hte(
   Y = "exp_yrly_end",
   D = "treat",
@@ -98,6 +102,7 @@ fit_hte_quick <- ensemble_hte(
 saveRDS(fit_hte_quick, file.path(out_dir, "fit_hte_quick.rds"))
 
 cat("Fitting: Quick Guide — prediction model ...\n")
+set.seed(2026)
 fit_pred_quick <- ensemble_pred(
   Y    = "bank_profits_pp",
   X    = c("css_creditscorefinal", "own_anybus", "css_assetvalue",
